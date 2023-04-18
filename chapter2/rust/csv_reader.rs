@@ -1,3 +1,4 @@
+use core::fs::File;
 use arrow::{
     csv::Reader,  // the csv functions and objects
     io::api,   // for opening the file
