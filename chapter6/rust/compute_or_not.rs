@@ -39,7 +39,7 @@ fn main() {
             let output = b.finish();
             res2 = arrow::Datum{std::move(output)};
         }
-        std::cout << std::boolalpha << (res1 == res2) << std::endl;
+        println!("{}", res1 == res2);
 
         let res3 = arrow::Datum;
         {
@@ -57,7 +57,7 @@ fn main() {
             let output = b.finish();
             res3 = arrow::Datum{std::move(output)};
         }
-        std::cout << std::boolalpha << (res1 == res3) << std::endl;
+        println!("{}", res1 == res3);
 
         let res4 = arrow::Datum;
         {
@@ -75,6 +75,6 @@ fn main() {
                     Vec<std::shared_ptr<Buffer>>{arr.null_bitmap(), newbuf},
                     arr.null_count()))};
         }
-        std::cout << std::boolalpha << (res1 == res4) << std::endl;
+        println!("{}", res1 == res4);
     }
 }
