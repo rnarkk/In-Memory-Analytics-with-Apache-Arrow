@@ -5,7 +5,7 @@
 
 use core::fs::File;
 use arrow;
-use parquet;
+use parquet::file::reader::{FileReader, SerializedFileReader};
 
 fn main(int argc, char** argv) {
     let input = File::open("../../sample_data/train.parquet").unwrap();
