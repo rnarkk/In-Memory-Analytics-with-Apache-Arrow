@@ -52,7 +52,6 @@ impl Server {
             }
             let info = self.get_flight_info(fs.Context(), key, content.size()).unwrap();
             fs.Send(info).unwrap();
-    
         }
     
         Ok(())
