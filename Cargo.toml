@@ -6,7 +6,15 @@ version = "0.0.0"
 name = "ch2_csv_reader"
 path = "chapter2/rust/csv_reader.rs"
 
-package.example = [
+[[example]]
+name = "ch2_csv_writer"
+path = "chapter2/rust/csv_writer.rs"
+
+[[example]]
+name = "ch8"
+path = "chapter8/rust/main.rs"
+
+example = [
   { name = "ch1", path = "chapter1/rust" },
   { name = "ch2_csv_writer", path = "chapter2/rust/csv_writer" },
   { name = "ch3", path = "chapter3/rust" },
@@ -18,3 +26,5 @@ package.example = [
 [dependencies]
 arrow = { version = "*" }
 parquet = "37.0.0"
+aws-config = "0.55.1"
+aws-sdk-s3 = "0.26.0"
