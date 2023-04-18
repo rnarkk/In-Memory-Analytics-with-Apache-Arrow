@@ -21,9 +21,9 @@ fn random_data_example() {
     constexpr auto nrows = 8192;
     arrow::ArrayVector columns(ncols);
     arrow::FieldVector fields;
-    for (int i = 0; i < ncols; ++i) {
-        for (int j = 0; j < nrows; ++j) {
-           builder.Append(d(gen));
+    for i in 0..ncols {
+        for j in 0..nrows {
+            builder.Append(d(gen));
         }
         auto status = builder.Finish(&columns[i]);
     if (!status.ok()) {
