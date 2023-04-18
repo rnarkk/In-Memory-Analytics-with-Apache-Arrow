@@ -15,10 +15,10 @@ import (
 	"github.com/elastic/go-elasticsearch/v7/esutil"
 )
 
-type property struct {
-	Type   string      `json:"type"`
-	Format string      `json:"format,omitempty"`
-	Fields interface{} `json:"fields,omitempty"`
+struct Property {
+    Type   string      `json:"type"`
+    Format string      `json:"format,omitempty"`
+    Fields interface{} `json:"fields,omitempty"`
 }
 
 var keywordField = &struct {
