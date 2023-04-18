@@ -1,13 +1,12 @@
 use std::fs::File;
 use arrow::{
-    compute,
+    compute as cp,
     data,
     datatypes::{DataType, Field, Schema}
 };
 
 namespace fs = arrow::fs;
 namespace ds = arrow::dataset;
-namespace cp = arrow::compute;
 
 fn create_dataset() -> arrow::Result<std::shared_ptr<ds::Dataset>> {
     let opts = fs::S3Options::Anonymous();

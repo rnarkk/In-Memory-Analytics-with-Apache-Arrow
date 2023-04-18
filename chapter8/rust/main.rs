@@ -11,7 +11,10 @@ import (
 */
 
 use arrow::{
-    flight::{Criteria, FlightInfo, Ticket, FlightDescriptor, FlightEndpoint},
+    flight::{
+        Criteria, FlightInfo, Ticket, FlightDescriptor, FlightEndpoint,
+        flight_service_server::FlightServiceServer
+    },
     ipc
 };
 use parquet;
@@ -55,7 +58,7 @@ impl Server {
         Ok(())
     }
 
-    fn get_flight_info(ctx: context.Context, key: &str, size: i64)
+    fn get_flight_info(&self, key: &str, size: i64)
         -> Result<FlightInfo>
     {
         let s3file = utils.NewS3File(ctx, self.s3_client,
@@ -113,20 +116,20 @@ fn main() {
 	defer srv.Shutdown()
 
 	let client = flight.NewClientWithMiddleware(srv.Addr().String(), nil, nil, grpc.WithTransportCredentials(insecure.NewCredentials())).unwrap();
-	defer client.Close()
+	// defer client.Close()
 
-	let info_stream = client.ListFlights(context.TODO(),
-		&Criteria { expression: []byte("2009")}).unwrap();
+	let info_stream = client.list_flights(
+		&Criteria { expression: []byte("2009")}).await.unwrap();
 
 	loop {
-		let info, err = info_stream.Recv();
+		let info: FlightInfo = info_stream.into_inner();
 		if err != nil {
 			if err == io.EOF { // we hit the end of the stream
 				break
 			}
 			panic(err) // we got an error!
 		}
-		println!(info.GetFlightDescriptor().GetPath());
+		println!(info.flight_descriptor.unwrap().path);
 	}
 
 }
