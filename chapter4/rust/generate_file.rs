@@ -6,9 +6,10 @@ use arrow::{
 use parquet as pq;
 import pandas as pd
 
-# run this from the sample_data directory to generate the .parquet
-# .arrow and -nonan.arrow files
+// run this from the sample_data directory to generate the .parquet
+// .arrow and -nonan.arrow files
 
+fn main () {
 tbl = pa.csv.read_csv('yellow_tripdata_2015-01.csv')
 pq.write_table(tbl, 'yellow_tripdata_2015-01.parquet')
 with pa.OSFile('yellow_tripdata_2015-01.arrow', 'wb') as sink:
@@ -22,3 +23,4 @@ tbl = pa.Table.from_pandas(df)
 with pa.OSFile('yellow_tripdata_2015-01-nonan.arrow', 'wb') as sink:
     with pa.RecordBatchFileWriter(sink, tbl.schema) as writer:
         writer.write_table(tbl)
+}
