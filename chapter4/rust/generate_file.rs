@@ -1,7 +1,7 @@
 use std::fs::File;
 use arrow::{
     self,
-    csv::Reader
+    csv::ReaderBuilder
 };
 use parquet as pq;
 // import pandas as pd
@@ -10,7 +10,10 @@ use parquet as pq;
 // .arrow and -nonan.arrow files
 
 fn main() {
-    let tbl = pa.csv.read_csv("yellow_tripdata_2015-01.csv");
+    let file = File::open("yellow_tripdata_2015-01.csv").unwrap();
+    let build = ReaderBuilder::new().infer_schema(Some(100));
+    let reader = builder.build(file).unwrap();
+    let tbl = pa.csv.read_csv();
     pq.write_table(tbl, "yellow_tripdata_2015-01.parquet");
     let sink = pa.OSFile("yellow_tripdata_2015-01.arrow", "wb");
     let writer = pa.RecordBatchFileWriter(sink, tbl.schema);

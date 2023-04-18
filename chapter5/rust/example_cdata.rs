@@ -30,7 +30,7 @@ fn export_int32_data(array: ArrowArray) {
             [](struct ArrowArray* arr) {
                 free(arr.buffers);
                 delete reinterpret_cast<Vec<i32>*>(arr.private_data);
-                arr->release = nullptr;
+                arr.release = nullptr;
             },
         .private_data = reinterpret_cast<void*>(vecptr),
     };

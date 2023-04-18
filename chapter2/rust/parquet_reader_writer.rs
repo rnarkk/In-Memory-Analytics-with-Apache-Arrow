@@ -1,5 +1,6 @@
 use std::fs::File;
 use arrow;
+use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder
 use parquet::file::{
     reader::{FileReader, SerializedFileReader},
     writer::SerializedFileWriter
@@ -7,7 +8,7 @@ use parquet::file::{
 
 fn main() {
     let file = File::open("../../sample_data/train.parquet").unwrap();
-    let reader = SerializedFileReader::new(file).unwrap();
+    let reader = ParquetRecordBatchReaderBuilder::new(file).unwrap();
 
     let table = std::shared_ptr<arrow::Table>;
     reader.ReadTable(&table).unwrap();
