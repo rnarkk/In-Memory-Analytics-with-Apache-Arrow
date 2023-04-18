@@ -15,6 +15,18 @@ name = "ch2_csv_writer"
 path = "chapter2/rust/csv_writer.rs"
 
 [[example]]
+name = "ch6_compute_functions"
+path = "chapter6/rust/compute_functions.rs"
+
+[[example]]
+name = "ch6_compute_or_not"
+path = "chapter6/rust/compute_or_not.rs"
+
+[[example]]
+name = "ch7"
+path = "chapter7/rust/write_partitioned.rs"
+
+[[example]]
 name = "ch8"
 path = "chapter8/rust/main.rs"
 

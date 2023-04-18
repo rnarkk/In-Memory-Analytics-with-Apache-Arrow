@@ -1,9 +1,9 @@
+use std::fs::File;
 use arrow::{
     compute,
     data,
+    datatypes::{DataType, Field, Schema}
 };
-#include <arrow/dataset/api.h>
-#include <arrow/filesystem/api.h>
 
 namespace fs = arrow::fs;
 namespace ds = arrow::dataset;
@@ -16,7 +16,7 @@ fn create_dataset() -> arrow::Result<std::shared_ptr<ds::Dataset>> {
     let format: std::shared_ptr<ds::FileFormat> =
         std::make_shared<ds::ParquetFileFormat>();
     let filesystem: std::shared_ptr<fs::FileSystem> =
-        fs::S3FileSystem::Make(opts).ValueOrDie();
+        fs::S3FileSystem::Make(opts).unwrap();
     let selector = fs::FileSelector;
     selector.base_dir = "ursa-labs-taxi-data";
     selector.recursive = true;  // check all the subdirectories
@@ -57,8 +57,10 @@ fn write_dataset(dataset: std::shared_ptr<ds::Dataset>) -> arrow::Status {
     write_opts.filesystem = filesystem;
     write_opts.base_dir = base_path;
     write_opts.partitioning = std::make_shared<ds::HivePartitioning>(
-        arrow::schema({arrow::field("year", arrow::int32()),
-                        arrow::field("month", arrow::int32())}));
+        Schema::new(vec![
+            Field::new("year", DataType::Int32(), false),
+            Field::new("month", DataType::Int32(), false)
+        ]));
 
     write_opts.basename_template = "part{i}.csv";
     ds::FileSystemDataset::Write(write_opts, scanner)
