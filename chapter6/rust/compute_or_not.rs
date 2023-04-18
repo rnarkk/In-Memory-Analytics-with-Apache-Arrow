@@ -31,7 +31,7 @@ fn main() {
             let b = Int32Builder::new();
             for i in 0..arr.len() {
                 if arr.IsValid(i) {
-                    b.append(arr.Value(i) + 2);
+                    b.append(arr.value(i) + 2);
                 } else {
                     b.append_null();
                 }
