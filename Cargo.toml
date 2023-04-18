@@ -1,0 +1,6 @@
+[[example]]
+name = "ch1"
+path = "chapter1/rust"
+
+[dependencies]
+arrow = { version = "*" }
