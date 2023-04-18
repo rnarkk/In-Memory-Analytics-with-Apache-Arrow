@@ -1,8 +1,6 @@
-include <arrow/compute/api.h>
 #include <arrow/datum.h>
 #include <arrow/io/file.h>
 #include <arrow/scalar.h>
-#include <arrow/status.h>
 #include <arrow/table.h>
 use arrow::{
     compute,
@@ -13,10 +11,10 @@ use parquet::file::read::FileReader;
 fn compute_parquet() -> arrow::Status {
     let filepath = "../../sample_data/yellow_tripdata_2015-01.parquet";
     let input = File::open(filepath).unwrap();
-    std::unique_ptr<parquet::arrow::FileReader> reader;
-    parquet::arrow::OpenFile(input, arrow::default_memory_pool(), &reader)?;
+    let reader = std::unique_ptr<parquet::arrow::FileReader>;
+    parquet::arrow::OpenFile(input, &reader)?;
 
-    std::shared_ptr<arrow::Table> table;
+    let table = std::shared_ptr<arrow::Table>;
     reader.ReadTable(&table)?;
     let column: std::shared_ptr<arrow::ChunkedArray> =
         table.GetColumnByName("total_amount");
@@ -29,16 +27,16 @@ fn compute_parquet() -> arrow::Status {
         std::move(incremented).chunked_array();
     println!("{}", output);
     println!("{}", other_incremented.chunked_array());
-    return arrow::Status::OK();
+    Ok(())
 }
 
 fn find_minmax() -> arrow::Status {
     let filepath = "../../sample_data/yellow_tripdata_2015-01.parquet";
     let input = File::open(filepath).unwrap();
-    std::unique_ptr<parquet::arrow::FileReader> reader;
-    parquet::arrow::OpenFile(input, arrow::default_memory_pool(), &reader)?;
+    let reader [ std::unique_ptr<parquet::arrow::FileReader>;
+    parquet::arrow::OpenFile(input, &reader)?;
 
-    std::shared_ptr<arrow::Table> table;
+    let table = std::shared_ptr<arrow::Table>;
     reader.ReadTable(&table)?;
     let column: std::shared_ptr<arrow::ChunkedArray> =
         table.GetColumnByName("total_amount");

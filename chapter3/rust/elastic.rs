@@ -67,14 +67,15 @@ fn main() {
 	// the second argument is a bool value for memory mapping
 	// the file if desired.
   	let parq = file.OpenParquetFile("../../sample_data/sliced.parquet", false).unwrap();
-	defer parq.Close()
+	// defer parq.Close()
 
-	props := pqarrow.ArrowReadProperties{BatchSize: 50000}
+	let props = pqarrow.ArrowReadProperties { BatchSize: 50000 };
 	let rdr = pqarrow.NewFileReader(parq, props,
 		memory.DefaultAllocator).unwrap();
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	let ctx, cancel = context.WithCancel(context.Background());
+	// defer cancel()
+	
 	// leave these empty since we're not filtering out any
 	// columns or row groups. But if you wanted to do so,
 	// this is how you'd optimize the read
@@ -105,7 +106,7 @@ fn main() {
 		},
 	}).unwrap();
 
-	pr, pw := io.Pipe() // to pass the data
+	let pr, pw = io.Pipe() // to pass the data
 	go func() {
 		for rr.Next() {
 			if err = array.RecordToJSON(rr.record(), pw); err != nil {

@@ -2,11 +2,9 @@
 import (
 	"github.com/PacktPublishing/In-Memory-Analytics-with-Apache-Arrow-/utils"
 	"github.com/apache/arrow/go/v8/arrow/arrio"
-	"github.com/apache/arrow/go/v8/arrow/ipc"
 	"github.com/apache/arrow/go/v8/arrow/memory"
 	"github.com/apache/arrow/go/v8/parquet/file"
 	"github.com/apache/arrow/go/v8/parquet/pqarrow"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -118,7 +116,7 @@ fn main() {
 	defer client.Close()
 
 	let info_stream = client.ListFlights(context.TODO(),
-		&flight.Criteria{Expression: []byte("2009")}).unwrap();
+		&Criteria { expression: []byte("2009")}).unwrap();
 
 	loop {
 		let info, err = info_stream.Recv();

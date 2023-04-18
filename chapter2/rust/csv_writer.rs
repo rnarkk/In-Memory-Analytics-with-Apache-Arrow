@@ -1,6 +1,6 @@
 use std::fs::File;
 use arrow::{
-    csv::Reader,
+    csv::ReaderBuilder,
     ipc
 };
 
@@ -34,8 +34,8 @@ fn incremental_write(table: std::shared_ptr<arrow::Table>,
         return maybe_writer.status();
     }
 
-    std::shared_ptr<arrow::ipc::RecordBatchWriter> writer = *maybe_writer;
-    std::shared_ptr<arrow::RecordBatch> batch;
+    let writer: std::shared_ptr<arrow::ipc::RecordBatchWriter> = *maybe_writer;
+    let batch = std::shared_ptr<arrow::RecordBatch>;
     while let Some(todo) = table_reader.next(&batch)  {
         if !batch {
             return;

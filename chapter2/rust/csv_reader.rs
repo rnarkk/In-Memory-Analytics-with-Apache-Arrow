@@ -1,9 +1,8 @@
 use std::fs::File;
 use arrow::{
-    csv::Reader,  // the csv functions and objects
+    csv::ReaderBuilder,  // the csv functions and objects
     table   // to read the data into a table
 };
-      // to output to the terminal
 
 fn main() {
     let file = File::open("../../sample_data/train.csv").unwrap();

@@ -24,13 +24,13 @@ fn main() {
 
         let arr = std::static_pointer_cast<arrow::Int32Array>(numarr);
 
-        arrow::Datum res1;
+        let res1 = arrow::Datum;
         {
-            timer t;
+            let t = timer;
             res1 = cp::Add(arr, arrow::Datum{2i32}).MoveValueUnsafe();
         }
 
-        arrow::Datum res2;
+        let res2 = arrow::Datum;
         {
             let t = timer;
             let b = arrow::Int32Builder;
@@ -54,14 +54,14 @@ fn main() {
             let b = arrow::Int32Builder;
             b.Reserve(arr.len());
             std::for_each(std::begin(*arr), std::end(*arr),
-                [&b](v: const arrow::util::optional<i32>& ) {
+                [&b]|v: const arrow::util::optional<i32>&| {
                     if v {
                         b.Append(*v + 2);
                     } else {
                         b.AppendNull();
                     }
                 });
-            std::shared_ptr<arrow::Array> output;
+            let output = std::shared_ptr<arrow::Array>;
             b.Finish(&output);
             res3 = arrow::Datum{std::move(output)};
         }
@@ -69,18 +69,18 @@ fn main() {
 
         let res4 = arrow::Datum;
         {
-            timer t;
+            let t = timer;
             let arr = std::static_pointer_cast<arrow::Int32Array>(numarr);
-            std::shared_ptr<arrow::Buffer> newbuf =
+            let newbuf = std::shared_ptr<Buffer> =
                 arrow::AllocateBuffer(sizeof(i32) * arr.len())
                     .MoveValueUnsafe();
-            let output = reinterpret_cast<i32*>(newbuf.mutable_data());
+            let output = reinterpret_cast<*i32>(newbuf.mutable_data());
             std::transform(arr.raw_values(), arr.raw_values() + arr.len(),
                             output, |v: i32| v + 2);
 
             res4 = arrow::Datum{arrow::MakeArray(
                 arrow::ArrayData::Make(arr.type(), arr.len(),
-                    Vec<std::shared_ptr<arrow::Buffer>>{
+                    Vec<std::shared_ptr<Buffer>>{
                         arr.null_bitmap(), newbuf},
                     arr.null_count()))};
         }

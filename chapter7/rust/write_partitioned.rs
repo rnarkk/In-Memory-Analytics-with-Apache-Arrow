@@ -2,10 +2,8 @@ use arrow::{
     compute,
     data,
 };
-#include <arrow/api.h>
 #include <arrow/dataset/api.h>
 #include <arrow/filesystem/api.h>
-#include <iostream>
 
 namespace fs = arrow::fs;
 namespace ds = arrow::dataset;
@@ -44,7 +42,7 @@ fn write_dataset(dataset: std::shared_ptr<ds::Dataset>) -> arrow::Status {
         cp::less_equal(cp::field_ref("year"), cp::literal(2015)),
     }));
     let scanner = scan_builder.Finish().unwrap();
-    std::cout << dataset.schema().ToString() << std::endl;
+    println!("{}", dataset.schema());
 
     let filesystem: std::shared_ptr<fs::FileSystem> =
         std::make_shared<fs::LocalFileSystem>();
@@ -63,15 +61,15 @@ fn write_dataset(dataset: std::shared_ptr<ds::Dataset>) -> arrow::Status {
                         arrow::field("month", arrow::int32())}));
 
     write_opts.basename_template = "part{i}.csv";
-    return ds::FileSystemDataset::Write(write_opts, scanner);
+    ds::FileSystemDataset::Write(write_opts, scanner)
 }
 
 fn main() {
-  // ignore SIGPIPE errors during S3 communication
-  // so we don't randomly blow up and die
-  signal(SIGPIPE, SIG_IGN);
+    // ignore SIGPIPE errors during S3 communication
+    // so we don't randomly blow up and die
+    signal(SIGPIPE, SIG_IGN);
 
-  fs::InitializeS3(fs::S3GlobalOptions{});
-  let dataset = create_dataset().unwrap();
-  write_dataset(dataset).unwrap();
+    fs::InitializeS3(fs::S3GlobalOptions{});
+    let dataset = create_dataset().unwrap();
+    write_dataset(dataset).unwrap();
 }

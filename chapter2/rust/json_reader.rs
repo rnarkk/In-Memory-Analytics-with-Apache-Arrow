@@ -11,12 +11,12 @@ fn main() {
     arrow::MemoryPool* pool = arrow::default_memory_pool();
     let maybe_reader =
         arrow::json::TableReader::Make(pool, file, read_options, parse_options);
-    if (!maybe_reader.ok()) {
+    if !maybe_reader.ok() {
         std::cerr << maybe_reader.status().message() << std::endl;
         return 1;
     }
-    std::shared_ptr<arrow::json::TableReader> reader = *maybe_reader;
-    auto maybe_table = reader.read();
+    let reader = std::shared_ptr<arrow::json::TableReader> = *maybe_reader;
+    let maybe_table = reader.read();
     if (!maybe_table.ok()) {
         std::cerr << maybe_table.status().message() << std::endl;
         return 1;

@@ -1,3 +1,4 @@
+/*
 #include <arrow/api.h>
 #include <arrow/compute/api.h>
 #include <arrow/compute/exec/exec_plan.h>
@@ -11,11 +12,12 @@
 #include <iostream>
 #include <memory>
 #include "timer.h"
+*/
 
 use arrow::{
     compute,
     data,
-    schema::Schema
+    datatypes::{DataType, Field, Schema}
 };
 
 namespace fs = arrow::fs;
@@ -29,7 +31,7 @@ fn create_dataset() -> arrow::Result<std::shared_ptr<ds::Dataset>> {
     let format: std::shared_ptr<ds::FileFormat> =
         std::make_shared<ds::ParquetFileFormat>();
     let filesystem: std::shared_ptr<fs::FileSystem> =
-        fs::S3FileSystem::Make(opts).ValueOrDie();
+        fs::S3FileSystem::Make(opts).unwrap();
     let selector = fs::FileSelector;
     selector.base_dir = "ursa-labs-taxi-data";
     selector.recursive = true;  // check all the subdirectories
@@ -44,42 +46,39 @@ fn create_dataset() -> arrow::Result<std::shared_ptr<ds::Dataset>> {
 }
 
 fn calc_mean(dataset: std::shared_ptr<ds::Dataset>) -> arrow::Status {
-    auto ctx = cp::default_exec_context();
+    let ctx = cp::default_exec_context();
 
     let options = std::make_shared<ds::ScanOptions>();
     options.use_threads = true;
-    ARROW_ASSIGN_OR_RAISE(
-        let project,
-        ds::ProjectionDescr::FromNames({"passenger_count"}, *dataset.schema()));
+    let project = ds::ProjectionDescr::FromNames({"passenger_count"}, *dataset.schema()).unwrap();
     ds::SetProjection(options.get(), project);
 
-    arrow::util::BackpressureOptions backpressure =
+    let backpressure: arrow::util::BackpressureOptions =
         arrow::util::BackpressureOptions::Make(ds::kDefaultBackpressureLow,
                                                 ds::kDefaultBackpressureHigh);
 
     let scan_node_options =
         ds::ScanNodeOptions{dataset, options, backpressure.toggle};
 
-    arrow::AsyncGenerator<arrow::util::optional<cp::ExecBatch>> sink_gen;
-    ARROW_ASSIGN_OR_RAISE(let plan, cp::ExecPlan::Make(ctx));
-    ARROW_RETURN_NOT_OK(
-        cp::Declaration::Sequence(
-            {{"scan", scan_node_options},
-            {"aggregate", cp::AggregateNodeOptions{{{"mean", nullptr}},
-                                                    {"passenger_count"},
-                                                    {"mean(passenger_count)"}}},
-            {"sink", cp::SinkNodeOptions{&sink_gen, std::move(backpressure)}}})
-            .AddToPlan(plan.get()));
+    let sink_gen = arrow::AsyncGenerator<arrow::util::optional<cp::ExecBatch>>;
+    let plan = cp::ExecPlan::Make(ctx).unwrap();
+    cp::Declaration::Sequence(
+        {{"scan", scan_node_options},
+        {"aggregate", cp::AggregateNodeOptions{{{"mean", nullptr}},
+                                                {"passenger_count"},
+                                                {"mean(passenger_count)"}}},
+        {"sink", cp::SinkNodeOptions{&sink_gen, std::move(backpressure)}}})
+        .AddToPlan(plan.get())?;
 
-    ARROW_RETURN_NOT_OK(plan.Validate());
+        plan.Validate()?;
 
     {
-        let timer t;
+        let t = timer;
         plan.StartProducing()?;
         let maybe_slow_mean = sink_gen().result();
         plan.finished().Wait();
 
-        ARROW_ASSIGN_OR_RAISE(let slow_mean = maybe_slow_mean);
+        let slow_mean = maybe_slow_mean.unwrap();
         println!("{}", slow_mean.values[0].scalar());
     }
     Ok(())
@@ -113,8 +112,8 @@ fn grouped_mean(dataset: std::shared_ptr<ds::Dataset>) -> arrow::Status {
         .AddToPlan(plan.get())?;
 
     let schema = Schema::new(vec![
-        arrow::field("mean(passenger_count)", arrow::float64()),
-        arrow::field("vendor_id", arrow::utf8())
+        Field::new("mean(passenger_count)", DataType::Float64),
+        Field::new("vendor_id", DataType::Utf8)
     ]);
 
     let sink_reader: std::shared_ptr<arrow::RecordBatchReader> =
@@ -151,27 +150,28 @@ fn grouped_filtered_mean(dataset: std::shared_ptr<ds::Dataset>) -> arrow::Status
 
     let sink_gen = arrow::AsyncGenerator<arrow::util::optional<cp::ExecBatch>>;
     let plan = cp::ExecPlan::Make(ctx).unwrap();
-    ARROW_RETURN_NOT_OK(
-        cp::Declaration::Sequence(
-            {{"scan", scan_node_options},
-            {"filter", cp::FilterNodeOptions{cp::greater(cp::field_ref("year"),
-                                                            cp::literal(2015))}},
-            {"project", cp::ProjectNodeOptions{{cp::field_ref("passenger_count"),
-                                                cp::field_ref("year")},
-                                                {"passenger_count", "year"}}},
-            {"aggregate", cp::AggregateNodeOptions{{{"hash_mean", nullptr}},
-                                                    {"passenger_count"},
-                                                    {"mean(passenger_count)"},
-                                                    {"year"}}},
-            {"sink", cp::SinkNodeOptions{&sink_gen, std::move(backpressure)}}})
-            .AddToPlan(plan.get()));
+    cp::Declaration::Sequence(
+        {{"scan", scan_node_options},
+        {"filter", cp::FilterNodeOptions{cp::greater(cp::field_ref("year"),
+                                                        cp::literal(2015))}},
+        {"project", cp::ProjectNodeOptions{{cp::field_ref("passenger_count"),
+                                            cp::field_ref("year")},
+                                            {"passenger_count", "year"}}},
+        {"aggregate", cp::AggregateNodeOptions{{{"hash_mean", nullptr}},
+                                                {"passenger_count"},
+                                                {"mean(passenger_count)"},
+                                                {"year"}}},
+        {"sink", cp::SinkNodeOptions{&sink_gen, std::move(backpressure)}}})
+        .AddToPlan(plan.get())?;
 
-    let schema = Schema::new({arrow::field("mean(passenger_count)", arrow::float64()),
-                        arrow::field("year", arrow::int32())});
+    let schema = Schema::new(vec![
+        Field::new("mean(passenger_count)", DataType::Float64),
+        Field::new("year", DataType::Int32)
+    ]);
 
-    std::shared_ptr<arrow::RecordBatchReader> sink_reader =
+    let sink_reader: std::shared_ptr<arrow::RecordBatchReader> =
         cp::MakeGeneratorReader(schema, std::move(sink_gen), ctx.memory_pool());
-    ARROW_RETURN_NOT_OK(plan.Validate());
+    plan.Validate()?;
 
     let response_table: std::shared_ptr<arrow::Table>;
     {
@@ -191,7 +191,7 @@ fn main() {
     signal(SIGPIPE, SIG_IGN);
 
     fs::InitializeS3(fs::S3GlobalOptions{});
-    let dataset = create_dataset().ValueOrDie();
+    let dataset = create_dataset().unwrap();
 
     ds::internal::Initialize();
     grouped_filtered_mean(dataset).unwrap();

@@ -3,6 +3,10 @@ name = "In-Memory-Analytics-with-Apache-Arrow"
 version = "0.0.0"
 
 [[example]]
+name = "ch1"
+path = "chapter1/rust/examples.rs"
+
+[[example]]
 name = "ch2_csv_reader"
 path = "chapter2/rust/csv_reader.rs"
 
