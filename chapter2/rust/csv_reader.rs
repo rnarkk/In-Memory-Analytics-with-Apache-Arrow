@@ -6,6 +6,7 @@ use arrow::{
       // to output to the terminal
 
 fn main() {
+    let file = File::open("../../sample_data/train.csv").unwrap();
     let maybe_input =
         arrow::io::ReadableFile::Open("../../sample_data/train.csv");
     if !maybe_input.ok() {
