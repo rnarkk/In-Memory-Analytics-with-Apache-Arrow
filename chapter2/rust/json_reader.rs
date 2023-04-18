@@ -1,9 +1,3 @@
-
-#include <arrow/io/api.h>
-#include <arrow/json/api.h>
-#include <arrow/table.h>
-#include <iostream>
-
 use std::fs::File;
 use arrow::json;
 
@@ -15,7 +9,7 @@ fn main() {
     let file = File::open(filename).unwrap();
 
     arrow::MemoryPool* pool = arrow::default_memory_pool();
-    auto maybe_reader =
+    let maybe_reader =
         arrow::json::TableReader::Make(pool, file, read_options, parse_options);
     if (!maybe_reader.ok()) {
         std::cerr << maybe_reader.status().message() << std::endl;

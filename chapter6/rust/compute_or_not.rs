@@ -1,92 +1,89 @@
-use alloc::vec::Vec;
-use arrow::array::Array;
-#include <arrow/api.h>
+use arrow::{
+    array::Array,
+    buffer::Buffer,
+    compute
+};
 #include <arrow/array/data.h>
 #include <arrow/array/util.h>
-#include <arrow/buffer.h>
-#include <arrow/compute/api.h>
 #include <arrow/util/optional.h>
-#include <algorithm>
-#include <iostream>
-#include <numeric>
 #include "timer.h"
 
 namespace cp = arrow::compute;
 
-fn main(int argc, char** argv) {
+fn main() {
     for (int n = 10000; n <= 10000000; n += 10000) {
-        let Vec<i32> testvalues(n);
+        let testvalues = Vec<i32>(n);
         std::iota(std::begin(testvalues), std::end(testvalues), 0);
 
-        arrow::Int32Builder nb;
+        let nb = arrow::Int32Builder;
         nb.AppendValues(testvalues);
-        std::shared_ptr<arrow::Array> numarr;
+        let numarr = std::shared_ptr<arrow::Array>;
         nb.Finish(&numarr);
 
-    std::cout << "N: " << n << std::endl;
+        println!("N: {}", n);
 
-    auto arr = std::static_pointer_cast<arrow::Int32Array>(numarr);
+        let arr = std::static_pointer_cast<arrow::Int32Array>(numarr);
 
-    arrow::Datum res1;
-    {
-      timer t;
-      res1 = cp::Add(arr, arrow::Datum{(int32_t)2}).MoveValueUnsafe();
-    }
-
-    arrow::Datum res2;
-    {
-      timer t;
-      arrow::Int32Builder b;
-      for (size_t i = 0; i < arr->length(); ++i) {
-        if (arr->IsValid(i)) {
-          b.Append(arr->Value(i) + 2);
-        } else {
-          b.AppendNull();
+        arrow::Datum res1;
+        {
+            timer t;
+            res1 = cp::Add(arr, arrow::Datum{2i32}).MoveValueUnsafe();
         }
-      }
-      std::shared_ptr<arrow::Array> output;
-      b.Finish(&output);
-      res2 = arrow::Datum{std::move(output)};
-    }
-    std::cout << std::boolalpha << (res1 == res2) << std::endl;
 
-    arrow::Datum res3;
-    {
-      timer t;
-      auto arr = std::static_pointer_cast<arrow::Int32Array>(numarr);
-      arrow::Int32Builder b;
-      b.Reserve(arr->length());
-      std::for_each(std::begin(*arr), std::end(*arr),
-                    [&b](const arrow::util::optional<int32_t>& v) {
-                      if (v) {
+        arrow::Datum res2;
+        {
+            let t = timer;
+            let b = arrow::Int32Builder;
+            for i in 0..arr.len() {
+                if arr.IsValid(i) {
+                    b.Append(arr.Value(i) + 2);
+                } else {
+                    b.AppendNull();
+                }
+            }
+            let output = std::shared_ptr<arrow::Array>;
+            b.Finish(&output);
+            res2 = arrow::Datum{std::move(output)};
+        }
+        std::cout << std::boolalpha << (res1 == res2) << std::endl;
+
+        let res3 = arrow::Datum;
+        {
+            let t = timer;
+            let arr = std::static_pointer_cast<arrow::Int32Array>(numarr);
+            let b = arrow::Int32Builder;
+            b.Reserve(arr.len());
+            std::for_each(std::begin(*arr), std::end(*arr),
+                [&b](v: const arrow::util::optional<i32>& ) {
+                    if v {
                         b.Append(*v + 2);
-                      } else {
+                    } else {
                         b.AppendNull();
-                      }
-                    });
-      std::shared_ptr<arrow::Array> output;
-      b.Finish(&output);
-      res3 = arrow::Datum{std::move(output)};
-    }
-    std::cout << std::boolalpha << (res1 == res3) << std::endl;
+                    }
+                });
+            std::shared_ptr<arrow::Array> output;
+            b.Finish(&output);
+            res3 = arrow::Datum{std::move(output)};
+        }
+        std::cout << std::boolalpha << (res1 == res3) << std::endl;
 
-    arrow::Datum res4;
-    {
-      timer t;
-      auto arr = std::static_pointer_cast<arrow::Int32Array>(numarr);
-      std::shared_ptr<arrow::Buffer> newbuf =
-          arrow::AllocateBuffer(sizeof(int32_t) * arr->length())
-              .MoveValueUnsafe();
-      auto output = reinterpret_cast<int32_t*>(newbuf->mutable_data());
-      std::transform(arr->raw_values(), arr->raw_values() + arr->length(),
-                     output, [](const int32_t v) { return v + 2; });
+        let res4 = arrow::Datum;
+        {
+            timer t;
+            let arr = std::static_pointer_cast<arrow::Int32Array>(numarr);
+            std::shared_ptr<arrow::Buffer> newbuf =
+                arrow::AllocateBuffer(sizeof(i32) * arr.len())
+                    .MoveValueUnsafe();
+            let output = reinterpret_cast<i32*>(newbuf.mutable_data());
+            std::transform(arr.raw_values(), arr.raw_values() + arr.len(),
+                            output, |v: i32| v + 2);
 
-      res4 = arrow::Datum{arrow::MakeArray(
-          arrow::ArrayData::Make(arr->type(), arr->length(),
-                                 std::vector<std::shared_ptr<arrow::Buffer>>{
-                                     arr->null_bitmap(), newbuf},
-                                 arr->null_count()))};
+            res4 = arrow::Datum{arrow::MakeArray(
+                arrow::ArrayData::Make(arr.type(), arr.len(),
+                    Vec<std::shared_ptr<arrow::Buffer>>{
+                        arr.null_bitmap(), newbuf},
+                    arr.null_count()))};
+        }
+        std::cout << std::boolalpha << (res1 == res4) << std::endl;
     }
-    std::cout << std::boolalpha << (res1 == res4) << std::endl;
-  }
 }
