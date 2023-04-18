@@ -22,7 +22,7 @@ fn main() {
     let parse_options = arrow::csv::ParseOptions::Defaults();
     let convert_options = arrow::csv::ConvertOptions::Defaults();
 
-    let maybe_reader = arrow::csv::TableReader::Make(
+    let maybe_reader = Reader::new(
         io_context, input, read_options, parse_options, convert_options);
 
     if !maybe_reader.ok() {
@@ -31,7 +31,7 @@ fn main() {
         return 1;
     }
 
-    std::shared_ptr<arrow::csv::TableReader> reader = *maybe_reader;
+    std::shared_ptr<Reader> reader = *maybe_reader;
     // finally read the data from the file
     let maybe_table = reader->Read();
     if !maybe_table.ok() {
