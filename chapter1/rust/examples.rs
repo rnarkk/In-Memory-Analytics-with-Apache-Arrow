@@ -1,4 +1,6 @@
-use arrow;
+use arrow::{
+    buffer
+};
 
 fn first_example() {
   let data = Vec<i64>![1, 2, 3, 4];
