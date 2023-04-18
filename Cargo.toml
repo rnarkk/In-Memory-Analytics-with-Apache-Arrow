@@ -1,6 +1,20 @@
+[package]
+name = "In-Memory-Analytics-with-Apache-Arrow"
+version = "0.0.0"
+
 [[example]]
-name = "ch1"
-path = "chapter1/rust"
+name = "ch2_csv_reader"
+path = "chapter2/rust/csv_reader.rs"
+
+package.example = [
+  { name = "ch1", path = "chapter1/rust" },
+  { name = "ch2_csv_writer", path = "chapter2/rust/csv_writer" },
+  { name = "ch3", path = "chapter3/rust" },
+  { name = "ch4", path = "chapter4/rust" },
+  { name = "ch5", path = "chapter5/rust" },
+  { name = "ch6", path = "chapter6/rust" },
+]
 
 [dependencies]
 arrow = { version = "*" }
+parquet = "37.0.0"
