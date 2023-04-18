@@ -1,4 +1,4 @@
-use arrow::schema::Schema;
+use arrow::datatypes::{DataType, Schema};
 use parquet;
 
 struct Property {
