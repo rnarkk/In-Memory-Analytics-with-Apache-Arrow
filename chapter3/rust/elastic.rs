@@ -15,6 +15,9 @@ import (
 	"github.com/elastic/go-elasticsearch/v7/esutil"
 )
 
+use arrow::schema::Schema;
+use parquet;
+
 struct Property {
     Type   string      `json:"type"`
     Format string      `json:"format,omitempty"`
