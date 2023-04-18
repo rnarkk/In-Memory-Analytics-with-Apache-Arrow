@@ -1,7 +1,6 @@
 use core::fs::File;
 use arrow::{
     csv::Reader,  // the csv functions and objects
-    io::api,   // for opening the file
     table   // to read the data into a table
 };
       // to output to the terminal
