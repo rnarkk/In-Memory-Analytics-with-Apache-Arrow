@@ -7,9 +7,8 @@ use core::fs::File;
 use arrow;
 use parquet::file::reader::{FileReader, SerializedFileReader};
 
-fn main(int argc, char** argv) {
+fn main() {
     let input = File::open("../../sample_data/train.parquet").unwrap();
-
     std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
     let status = parquet::arrow::OpenFile(input, arrow::default_memory_pool(),
                                          &arrow_reader);
