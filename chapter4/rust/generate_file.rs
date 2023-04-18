@@ -1,7 +1,8 @@
 import pyarrow as pa
+use core::fs::File;
 use arrow::{
     self,
-    csv
+    csv::Reader
 };
 use parquet as pq;
 import pandas as pd
