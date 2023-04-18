@@ -1,16 +1,14 @@
-
-#include <arrow/io/api.h>
 #include <arrow/table.h>
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/writer.h>
 #include <iostream>
-  
+
+use core::fs::File;
 use arrow;
 use parquet;
 
 fn main(int argc, char** argv) {
-    PARQUET_ASSIGN_OR_THROW(auto input, arrow::io::ReadableFile::Open(
-                                          "../../sample_data/train.parquet"));
+    let input = File::open("../../sample_data/train.parquet").unwrap();
 
     std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
     let status = parquet::arrow::OpenFile(input, arrow::default_memory_pool(),
