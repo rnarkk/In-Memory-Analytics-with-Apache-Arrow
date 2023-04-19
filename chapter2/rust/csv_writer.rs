@@ -1,55 +1,45 @@
 use std::fs::{File, OpenOptions};
 use arrow::{
-    csv::{ReaderBuilder, WriterBuilder},
+    csv::{ReaderBuilder, Writer},
     error::Result,
-    ipc,
+    ipc::{reader::StreamReader, writer::StreamWriter},
     record_batch::RecordBatch
 };
 
 fn read_csv(path: &str) -> Result<RecordBatch> {
     let file = File::open(path).unwrap();
-    let reader = ReaderBuilder::new().build(file).unwrap();
-    reader.read()
+    let mut reader = ReaderBuilder::new().build(file).unwrap();
+    reader.next().unwrap()
 }
 
 fn write_table(batch: &RecordBatch, path: &str) -> Result<()> {
     let append = false;  // set to true to append to an existing file
     let file = OpenOptions::new().append(append).open(path).unwrap();
-    let writer = WriterBuilder::new().build(file);
+    let mut writer = WriterBuilder::new().build(file);
     writer.write(batch)
 }
 
-fn incremental_write(table: &RecordBatch, path: &str) -> Result<()> {
+fn incremental_write(batch: &RecordBatch, path: &str) -> Result<()> {
     let append = false;  // set to true to append to an existing file
     let output = OpenOptions::new().append(append).open(path).unwrap();
-    let reader = arrow::TableBatchReader(*table);
+    let reader = StreamReader::try_new(batch).unwrap();
+    let writer = Writer::new(output);
 
-    let maybe_writer = arrow::csv::MakeCSVWriter(
-        output, table_reader.schema(), arrow::csv::WriteOptions::Defaults());
-    if !maybe_writer.ok() {
-        return maybe_writer.status();
-    }
-
-    let writer: std::shared_ptr<arrow::ipc::RecordBatchWriter> = *maybe_writer;
-    let batch = std::shared_ptr<arrow::RecordBatch>;
-    while let Some(todo) = reader.next(&batch)  {
+    while let Some(batch) = reader.next() {
         if !batch {
             return;
         }
-        status = writer.WriteRecordBatch(*batch);
+        status = writer.write(&batch);
         if !status.ok() {
             return status;
         }
     }
 
-    RETURN_NOT_OK(writer.close());
-    RETURN_NOT_OK(output.close());
-
     Ok(())
 }
 
 fn main() {
-    let table = read_csv("../../sample_data/train.csv").unwrap();
-    write_table(table, "train.csv").unwrap();
-    incremental_write(table, "train.csv").unwrap();
+    let batch = read_csv("../../sample_data/train.csv").unwrap();
+    write_table(&batch, "train.csv").unwrap();
+    incremental_write(&batch, "train.csv").unwrap();
 }
