@@ -7,7 +7,7 @@ use arrow::{
 use super::timer;
 
 fn main() {
-    for (int n = 10000; n <= 10000000; n += 10000) {
+    for n in (10000..=10000000).skip(10000) {
         let testvalues = Vec<i32>(n);
         std::iota(std::begin(testvalues), std::end(testvalues), 0);
 
