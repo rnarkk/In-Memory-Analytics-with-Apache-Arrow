@@ -1,44 +1,30 @@
 use std::fs::File;
 use arrow::{
     compute::{self as cp, SortOptions},
-    data,
     error::Result
 };
-use parquet::file::read::FileReader;
+use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 fn compute_parquet() -> Result<()> {
-    let filepath = "../../sample_data/yellow_tripdata_2015-01.parquet";
-    let input = File::open(filepath).unwrap();
-    let reader = std::unique_ptr<parquet::arrow::FileReader>;
-    parquet::arrow::OpenFile(input, &reader)?;
+    let path = "../../sample_data/yellow_tripdata_2015-01.parquet";
+    let input = File::open(path).unwrap();
+    let reader = ParquetRecordBatchReaderBuilder::try_new(input)?.build()?;
+    let batch = reader.next().unwrap().unwrap();
+    let column = batch.column_by_name("total_amount").unwrap();
+    println!("{:?}", column);
 
-    let table = std::shared_ptr<arrow::Table>;
-    reader.ReadTable(&table)?;
-    let column: std::shared_ptr<arrow::ChunkedArray> =
-        table.GetColumnByName("total_amount");
-    println!("{}", column);
-
-    let incremented = arrow::compute::CallFunction("add", {column, arrow::MakeScalar(5.5)}).unwrap();
-    // alternately we could do:
-    let other_incremented = cp::add(column, arrow::MakeScalar(5.5)).unwrap();
-    let output: std::shared_ptr<arrow::ChunkedArray> =
-        std::move(incremented).chunked_array();
-    println!("{}", output);
-    println!("{}", other_incremented.chunked_array());
+    let incremented = cp::add_scalar(column, 5.5)?;
+    println!("{}", incremented);
     Ok(())
 }
 
 fn find_minmax() -> Result<()> {
-    let filepath = "../../sample_data/yellow_tripdata_2015-01.parquet";
-    let input = File::open(filepath).unwrap();
-    let reader = std::unique_ptr<parquet::arrow::FileReader>;
-    parquet::arrow::OpenFile(input, &reader)?;
-
-    let table = std::shared_ptr<arrow::Table>;
-    reader.ReadTable(&table)?;
-    let column: std::shared_ptr<arrow::ChunkedArray> =
-        table.GetColumnByName("total_amount");
-    println!("{}", column);
+    let path = "../../sample_data/yellow_tripdata_2015-01.parquet";
+    let input = File::open(path).unwrap();
+    let reader = ParquetRecordBatchReaderBuilder::try_new(input)?.build()?;
+    let batch = reader.next().unwrap().unwrap();
+    let column = batch.column_by_name("total_amount").unwrap();
+    println!("{:?}", column);
 
     let scalar_agg_opts = arrow::compute::ScalarAggregateOptions;
     scalar_agg_opts.skip_nulls = false;
@@ -50,18 +36,15 @@ fn find_minmax() -> Result<()> {
 fn sort_table() -> Result<()> {
     let filepath = "../../sample_data/yellow_tripdata_2015-01.parquet";
     let input = File::open(filepath).unwrap();
-    let reader = std::unique_ptr<parquet::arrow::FileReader>;
-    parquet::arrow::OpenFile(input, &reader)?;
-
-    let table = std::shared_ptr<arrow::Table>;
-    reader.ReadTable(&table)?;
+    let reader = ParquetRecordBatchReaderBuilder::try_new(input)?.build()?;
+    let batch = reader.next().unwrap().unwrap();
 
     let sort_opts = SortOptions { descending: true, nulls_first: };
     sort_opts.sort_keys = {arrow::compute::SortKey{
         "total_amount", arrow::compute::SortOrder::Descending}};
-    let indices = arrow::compute::CallFunction("sort_indices", {table}, &sort_opts).unwrap();
+    let indices = arrow::compute::CallFunction("sort_indices", {batch}, &sort_opts).unwrap();
 
-    let sorted = cp::take(table, indices).unwrap();
+    let sorted = cp::take(batch, indices).unwrap();
     let output = std::move(sorted).table();
     println!("{}", output);
 
@@ -71,4 +54,5 @@ fn sort_table() -> Result<()> {
 fn main() {
     compute_parquet().unwrap();
     find_minmax().unwrap();
+    sort_table().unwrap();
 }
