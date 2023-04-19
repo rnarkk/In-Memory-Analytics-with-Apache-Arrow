@@ -1,5 +1,5 @@
 use arrow::{
-    array::Int64Array,
+    array::{Float64Builder, Int64Array},
     buffer::Buffer,
     datatypes::{DataType, Field, Schema},
     record_batch::RecordBatch
@@ -16,16 +16,16 @@ fn first_example() {
 fn random_data_example() {
     let normal = Normal::new(5, 2).unwrap();
     let mut rng = rand::thread_rng();
-    let builder = arrow::DoubleBuilder {DataType::Float64, pool};
+    let builder = Float64Builder::new();
     let ncols = 16;
     let nrows = 8192;
     let mut columns = Vec::with_capacity(ncols);
     let mut fields = Vec::new();
     for i in 0..ncols {
         for j in 0..nrows {
-            builder.append(normal.sample(&mut rng));
+            builder.append_value(normal.sample(&mut rng));
         }
-        columns.push(builder.finish().unwrap());
+        columns.push(builder.finish());
         fields.push(Field::new(format!("c{i}"), DataType::Float64, false));
     }
 
