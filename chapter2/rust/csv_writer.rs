@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use arrow::{
     csv::ReaderBuilder,
     ipc
@@ -13,7 +13,7 @@ fn read_csv(filename: &str) -> arrow::Result<std::shared_ptr<arrow::Table>> {
 fn write_table(table: std::shared_ptr<arrow::Table>,
                output_filename: &str) -> arrow::Status {
     let append = false;  // set to true to append to an existing file
-    let output = File::open(output_filename, append).unwrap();
+    let output = OpenOptions::new().append(append).open(output_filename).unwrap();
     let write_options = arrow::csv::WriteOptions::Defaults();
     arrow::csv::WriteCSV(*table, write_options, output.get())
 }
@@ -21,12 +21,12 @@ fn write_table(table: std::shared_ptr<arrow::Table>,
 fn incremental_write(table: std::shared_ptr<arrow::Table>,
                      output_filename: &str) -> arrow::Status {
     let append = false;  // set to true to append to an existing file
-    let output = File::open(output_filename, append).unwrap();
+    let output = OpenOptions::new().append(append).open(output_filename, append).unwrap();
     let table_reader = arrow::TableBatchReader(*table);
 
     let maybe_writer = arrow::csv::MakeCSVWriter(
         output, table_reader.schema(), arrow::csv::WriteOptions::Defaults());
-    if (!maybe_writer.ok()) {
+    if !maybe_writer.ok() {
         return maybe_writer.status();
     }
 
