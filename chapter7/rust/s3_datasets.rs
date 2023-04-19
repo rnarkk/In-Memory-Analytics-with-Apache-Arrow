@@ -1,28 +1,30 @@
 use std::{
-  fs::File,
-  sync::Arc
+    fs::File,
+    sync::Arc
 };
 use arrow::{
-  array::{Int16Array, Int64Array, StringArray, StructArray},
-  datatypes::{DataType, Field, Schema},
-  compute as cp,
-  error::Result,
-  record_batch::RecordBatch
+    array::{Int16Array, Int64Array, StringArray, StructArray},
+    datatypes::{DataType, Field, Schema},
+    compute as cp,
+    error::Result,
+    record_batch::RecordBatch
 };
 use datafusion::{
-  datasource::file_format::FileFormat,
-  prelude::*
+    datasource::file_format::{
+        FileFormat,
+        parquet::ParquetFormat,
+    },
+    prelude::*
 };
 use parquet;
+use object_store::{
+    ObjectStore,
+    aws::AmazonS3Builder
+};
 
 fn timing_test() {
-    let opts = fs::S3Options::Anonymous();
-    opts.region = "us-east-2";
-
-    std::shared_ptr<ds::FileFormat> format =
-        std::make_shared<ds::ParquetFileFormat>();
-    std::shared_ptr<fs::FileSystem> filesystem =
-        fs::S3FileSystem::Make(opts).ValueOrDie();
+    let s3 = AmazonS3Builder::new().region("us-east-2");
+    let format = ParquetFormat::new();
     fs::FileSelector selector;
     selector.base_dir = "ursa-labs-taxi-data";
     selector.recursive = true;  // check all the subdirectories
@@ -32,29 +34,24 @@ fn timing_test() {
 
     {
       timer t;
-      factory = ds::FileSystemDatasetFactory::Make(filesystem, selector, format,
+      factory = ds::FileSystemDatasetFactory::Make(s3, selector, format,
                                                   ds::FileSystemFactoryOptions())
-                    .ValueOrDie();
-      dataset = factory.Finish().ValueOrDie();
+                    .unwrap();
+      dataset = factory.Finish().unwrap();
     }
 
-    let scan_builder = dataset.NewScan().ValueOrDie();
-    let scanner = scan_builder.Finish().ValueOrDie();
+    let scan_builder = dataset.scan().unwrap();
+    let scanner = scan_builder.Finish().unwrap();
 
     {
       timer t;
-      std::cout << scanner.CountRows().ValueOrDie() << std::endl;
+      std::cout << scanner.CountRows().unwrap() << std::endl;
     }
 }
 
 fn compute_mean() {
-    let opts = fs::S3Options::Anonymous();
-    opts.region = "us-east-2";
-
-    std::shared_ptr<ds::FileFormat> format =
-        std::make_shared<ds::ParquetFileFormat>();
-    std::shared_ptr<fs::FileSystem> filesystem =
-        fs::S3FileSystem::Make(opts).ValueOrDie();
+    let s3 = AmazonS3Builder::new().region("us-east-2");
+    let format = ParquetFormat::new();
     fs::FileSelector selector;
     selector.base_dir = "ursa-labs-taxi-data";
     selector.recursive = true;  // check all the subdirectories
@@ -64,34 +61,27 @@ fn compute_mean() {
 
     {
       timer t;
-      let scan_builder = dataset.NewScan().ValueOrDie();
+      let scan_builder = dataset.scan().unwrap();
       scan_builder.BatchSize(1 << 28);  // default is 1 << 20
       scan_builder.UseThreads(true);
       scan_builder.Project({"passenger_count"});
-      let scanner = scan_builder.Finish().ValueOrDie();
+      let scanner = scan_builder.Finish().unwrap();
       std::atomic<int64_t> passengers(0), count(0);
       ABORT_ON_FAIL(
-          scanner.Scan([&](ds::TaggedRecordBatch batch) -> arrow::Status {
-            ARROW_ASSIGN_OR_RAISE(
-                let result,
-                cp::Sum(batch.record_batch.GetColumnByName("passenger_count")));
+          scanner.Scan(|ds::TaggedRecordBatch batch| -> arrow::Status {
+            let result = cp::Sum(batch.record_batch.column_by_name("passenger_count")).unwrap();
             passengers += result.scalar_as<arrow::Int64Scalar>().value;
             count += batch.record_batch.num_rows();
             return arrow::Status::OK();
           }));
-      double mean = double(passengers.load()) / double(count.load());
-      std::cout << mean << std::endl;
-    }  // end of the timer block
+      let mean = double(passengers.load()) / double(count.load());
+      println!("{}", mean);
+    }
 }
 
 fn scan_fragments() {
-    let opts = fs::S3Options::Anonymous();
-    opts.region = "us-east-2";
-
-    std::shared_ptr<ds::FileFormat> format =
-        std::make_shared<ds::ParquetFileFormat>();
-    std::shared_ptr<fs::FileSystem> filesystem =
-        fs::S3FileSystem::Make(opts).ValueOrDie();
+    let s3 = AmazonS3Builder::new().region("us-east-2");
+    let format = ParquetFormat::new();
     fs::FileSelector selector;
     selector.base_dir = "ursa-labs-taxi-data";
     selector.recursive = true;  // check all the subdirectories
@@ -101,18 +91,16 @@ fn scan_fragments() {
         ds::DirectoryPartitioning::MakeFactory({"year", "month"});
 
     let factory =
-        ds::FileSystemDatasetFactory::Make(filesystem, selector, format, options)
-            .ValueOrDie();
-    let dataset = factory.Finish().ValueOrDie();
-    let fragments = dataset.GetFragments().ValueOrDie();
+        ds::FileSystemDatasetFactory::Make(filesystem, selector, format, options).unwrap();
+    let dataset = factory.Finish().unwrap();
+    let fragments = dataset.GetFragments().unwrap();
 
     for fragment in fragments {
-      std::cout << "Found Fragment: " << (*fragment).ToString() << std::endl;
-      std::cout << "Partition Expression: "
-                << (*fragment).partition_expression().ToString() << std::endl;
+        println!("Found Fragment: {}", *fragment);
+        println!("Partition Expression: {}", fragment.partition_expression());
     }
 
-    std::cout << dataset.schema().ToString() << std::endl;
+    println!("{}", dataset.schema());
 }
 
 fn main() {
