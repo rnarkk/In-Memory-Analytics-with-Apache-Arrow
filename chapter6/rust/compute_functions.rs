@@ -1,14 +1,12 @@
-#include <arrow/datum.h>
-#include <arrow/scalar.h>
-#include <arrow/table.h>
 use std::fs::File;
 use arrow::{
     compute::{self as cp, SortOptions},
     data,
+    error::Result
 };
 use parquet::file::read::FileReader;
 
-fn compute_parquet() -> arrow::Status {
+fn compute_parquet() -> Result<()> {
     let filepath = "../../sample_data/yellow_tripdata_2015-01.parquet";
     let input = File::open(filepath).unwrap();
     let reader = std::unique_ptr<parquet::arrow::FileReader>;
@@ -30,7 +28,7 @@ fn compute_parquet() -> arrow::Status {
     Ok(())
 }
 
-fn find_minmax() -> arrow::Status {
+fn find_minmax() -> Result<()> {
     let filepath = "../../sample_data/yellow_tripdata_2015-01.parquet";
     let input = File::open(filepath).unwrap();
     let reader = std::unique_ptr<parquet::arrow::FileReader>;
@@ -49,7 +47,7 @@ fn find_minmax() -> arrow::Status {
     Ok(())
 }
 
-fn sort_table() -> arrow::Status {
+fn sort_table() -> Result<()> {
     let filepath = "../../sample_data/yellow_tripdata_2015-01.parquet";
     let input = File::open(filepath).unwrap();
     let reader = std::unique_ptr<parquet::arrow::FileReader>;
