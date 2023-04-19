@@ -1,28 +1,16 @@
-/*
-#include <arrow/api.h>
-#include <arrow/compute/api.h>
-#include <arrow/compute/exec/exec_plan.h>
-#include <arrow/dataset/api.h>
-#include <arrow/dataset/plan.h>
-#include <arrow/filesystem/api.h>
-#include <arrow/table.h>
-#include <arrow/util/async_generator.h>
-#include <arrow/util/optional.h>
-#include <signal.h>
-#include <iostream>
-#include <memory>
-#include "timer.h"
-*/
-
+use std::fs::File;
 use arrow::{
-    compute,
+    compute as cp,
     data,
     datatypes::{DataType, Field, Schema}
+    error::Result
 };
+use aws_config;
+use aws_sdk_s3;
+// use super::timer;
 
-namespace fs = arrow::fs;
-namespace ds = arrow::dataset;
-namespace cp = arrow::compute;
+// namespace fs = arrow::fs;
+// namespace ds = arrow::dataset;
 
 fn create_dataset() -> arrow::Result<std::shared_ptr<ds::Dataset>> {
     let opts = fs::S3Options::Anonymous();
@@ -45,7 +33,7 @@ fn create_dataset() -> arrow::Result<std::shared_ptr<ds::Dataset>> {
     factory.finish()
 }
 
-fn calc_mean(dataset: std::shared_ptr<ds::Dataset>) -> arrow::Status {
+fn calc_mean(dataset: std::shared_ptr<ds::Dataset>) -> Result<()> {
     let ctx = cp::default_exec_context();
 
     let options = std::make_shared<ds::ScanOptions>();
