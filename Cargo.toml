@@ -39,6 +39,7 @@ name = "ch8"
 path = "chapter8/rust/main.rs"
 
 [dependencies]
+rand = "0.9"
 rand_distr = "0.5"
 elasticsearch = "8"
 datafusion = "22"
