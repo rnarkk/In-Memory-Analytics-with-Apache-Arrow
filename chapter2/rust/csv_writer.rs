@@ -1,7 +1,8 @@
 use std::fs::{File, OpenOptions};
 use arrow::{
-    csv::ReaderBuilder,
-    ipc
+    csv::{ReaderBuilder, WriterBuilder},
+    ipc,
+    record_batch::RecordBatch
 };
 
 fn read_csv(filename: &str) -> arrow::Result<std::shared_ptr<arrow::Table>> {
@@ -10,12 +11,11 @@ fn read_csv(filename: &str) -> arrow::Result<std::shared_ptr<arrow::Table>> {
     reader.read()
 }
 
-fn write_table(table: std::shared_ptr<arrow::Table>,
-               output_filename: &str) -> arrow::Status {
+fn write_table(batch: &RecordBatch, filename: &str) -> Result<()> {
     let append = false;  // set to true to append to an existing file
-    let output = OpenOptions::new().append(append).open(output_filename).unwrap();
-    let write_options = arrow::csv::WriteOptions::Defaults();
-    arrow::csv::WriteCSV(*table, write_options, output.get())
+    let file = OpenOptions::new().append(append).open(filename).unwrap();
+    let writer = WriterBuilder::new().build(file);
+    writer.write(batch)
 }
 
 fn incremental_write(table: std::shared_ptr<arrow::Table>,
