@@ -5,9 +5,9 @@ use arrow::{
     record_batch::RecordBatch
 };
 
-fn read_csv(filename: &str) -> arrow::Result<std::shared_ptr<arrow::Table>> {
+fn read_csv(filename: &str) -> Result<RecordBatch> {
     let file = File::open(filename).unwrap();
-    let reader = Reader::new(file).unwrap();
+    let reader = ReaderBuilder::new().build(file).unwrap();
     reader.read()
 }
 
