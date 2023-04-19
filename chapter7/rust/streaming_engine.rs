@@ -1,37 +1,47 @@
 use std::fs::File;
 use arrow::{
     compute as cp,
-    data,
     datatypes::{DataType, Field, Schema},
     error::Result
 };
 use aws_config;
 use aws_sdk_s3;
-use datafusion::prelude::*;
+use datafusion::{
+    datasource::{
+        datasource::TableProvider,
+        file_format::parquet::ParquetFormat
+    },
+    physical_plan::{
+        ExecutionPlan,
+        file_format::FileMeta,
+    },
+    prelude::*
+};
+use object_store::{
+    ObjectMeta,
+    aws::AmazonS3Builder
+};
 // use super::timer;
 
-fn create_dataset() -> arrow::Result<std::shared_ptr<ds::Dataset>> {
-    let opts = fs::S3Options::Anonymous();
-    opts.region = "us-east-2";
-
-    let format: std::shared_ptr<ds::FileFormat> =
-        std::make_shared<ds::ParquetFileFormat>();
-    let filesystem: std::shared_ptr<fs::FileSystem> =
-        fs::S3FileSystem::Make(opts).unwrap();
+fn create_dataset() -> Result<impl TableProvider> {
+    let ctx = SessionContext::new();
+    let s3 = AmazonS3Builder::new().with_region("us-east-2").build();
+    let format = ParquetFormat::new();
+    // check all the subdirectories
     let selector = fs::FileSelector;
     selector.base_dir = "ursa-labs-taxi-data";
-    selector.recursive = true;  // check all the subdirectories
+    selector.recursive = true;
 
     let options = ds::FileSystemFactoryOptions;
     options.partitioning =
-        ds::DirectoryPartitioning::MakeFactory({"year", "month"});
+        ds::DirectoryPartitioning::MakeFactory(vec!["year", "month"]);
     let factory = 
-        ds::FileSystemDatasetFactory::Make(filesystem, selector, format, options).unwrap();
+        ds::FileSystemDatasetFactory::Make(s3, selector, format, options).unwrap();
 
     factory.finish()
 }
 
-fn calc_mean(dataset: std::shared_ptr<ds::Dataset>) -> Result<()> {
+fn calc_mean(dataset: impl TableProvider) -> Result<()> {
     let ctx = SessionContext::new();
 
     let options = std::make_shared<ds::ScanOptions>();
@@ -70,16 +80,21 @@ fn calc_mean(dataset: std::shared_ptr<ds::Dataset>) -> Result<()> {
     Ok(())
 }
 
-fn grouped_mean(dataset: std::shared_ptr<ds::Dataset>) -> arrow::Status {
-    let ctx = cp::default_exec_context();
-
-    let options = std::make_shared<ds::ScanOptions>();
-    options.use_threads = true;
+fn grouped_mean(dataset: impl TableProvider) -> arrow::Status {
+    let ctx = SessionContext::new();
+    // options.use_threads = true;
     let projection = ds::ProjectionDescr::FromNames(
         {"vendor_id", "passenger_count"},
         *dataset.schema()).unwrap();
-    ds::SetProjection(options.get(), projection);
+    let scanner = dataset.scan(
+        &ctx.state(),
+        Some(projection),
+        todo!(),
+        None
+    );
 
+    let options = std::make_shared<ds::ScanOptions>();
+    
     let backpressure: arrow::util::BackpressureOptions =
         arrow::util::BackpressureOptions::Make(ds::kDefaultBackpressureLow,
                                                 ds::kDefaultBackpressureHigh);
@@ -98,8 +113,8 @@ fn grouped_mean(dataset: std::shared_ptr<ds::Dataset>) -> arrow::Status {
         .AddToPlan(plan.get())?;
 
     let schema = Schema::new(vec![
-        Field::new("mean(passenger_count)", DataType::Float64),
-        Field::new("vendor_id", DataType::Utf8)
+        Field::new("mean(passenger_count)", DataType::Float64, false),
+        Field::new("vendor_id", DataType::Utf8, false)
     ]);
 
     let sink_reader: std::shared_ptr<arrow::RecordBatchReader> =
@@ -118,15 +133,17 @@ fn grouped_mean(dataset: std::shared_ptr<ds::Dataset>) -> arrow::Status {
     future.status()
 }
 
-fn grouped_filtered_mean(dataset: std::shared_ptr<ds::Dataset>) -> arrow::Status {
-    let ctx = cp::default_exec_context();
-
-    let options = std::make_shared<ds::ScanOptions>();
-    options.use_threads = true;
-    options.filter = cp::greater(cp::field_ref("year"), cp::literal(2015));
+fn grouped_filtered_mean(dataset: impl TableProvider) -> arrow::Status {
+    let ctx = SessionContext::new();
+    // use_threads = true;
     let projection = ds::ProjectionDescr::FromNames(
-            {"passenger_count", "year"}, *dataset.schema()).unwrap();
-    ds::SetProjection(options.get(), projection);
+        {"passenger_count", "year"}, *dataset.schema()).unwrap()
+    let scanner = dataset.scan(
+        &ctx.state(),
+        Some(projection),
+        col("year").gt(lit(2015)),
+        None
+    );
 
     let backpressure = arrow::util::BackpressureOptions =
         arrow::util::BackpressureOptions::Make(ds::kDefaultBackpressureLow,

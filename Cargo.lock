@@ -12,6 +12,7 @@ dependencies = [
  "datafusion",
  "elasticsearch",
  "influxdb",
+ "object_store",
  "parquet 37.0.0",
  "rand",
  "rand_distr",

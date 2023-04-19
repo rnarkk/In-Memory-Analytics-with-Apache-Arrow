@@ -63,6 +63,7 @@ elasticsearch = { version = "8.5.0-alpha.1", default-features = false, features 
 datafusion = "22"
 tokio = "1"
 arrow = { version = "37" }
-parquet = "37.0.0"
-aws-config = "0.55.1"
-aws-sdk-s3 = "0.26.0"
+parquet = "37"
+aws-config = "0.55"
+aws-sdk-s3 = "0.26"
+object_store = "0.5"

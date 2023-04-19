@@ -1,20 +1,27 @@
 use std::fs::File;
 use arrow::{
-    compute as cp,
     datatypes::{DataType, Field, Schema},
     error::Result
 };
-use datafusion::prelude::*;
+use datafusion::{
+    datasource::{
+        datasource::TableProvider,
+        file_format::{
+            csv::CsvFormat,
+            parquet::ParquetFormat
+        }
+    },
+    prelude::*
+};
 use aws_config::SdkConfig;
+use object_store::{
+    aws::AmazonS3Builder,
+    local::LocalFileSystem
+};
 
-fn create_dataset() -> Result<std::shared_ptr<ds::Dataset>> {
-    let config = SdkConfig::builder().region("us-east-2");
-    let opts = fs::S3Options::Anonymous();
-
-    let format: std::shared_ptr<ds::FileFormat> =
-        std::make_shared<ds::ParquetFileFormat>();
-    let filesystem: std::shared_ptr<fs::FileSystem> =
-        fs::S3FileSystem::Make(opts).unwrap();
+fn create_dataset() -> Result<impl TableProvider> {
+    let s3 = AmazonS3Builder::new().with_region("us-east-2").build();
+    let format = ParquetFormat::new();
     let selector = fs::FileSelector;
     selector.base_dir = "ursa-labs-taxi-data";
     selector.recursive = true;  // check all the subdirectories
@@ -23,7 +30,7 @@ fn create_dataset() -> Result<std::shared_ptr<ds::Dataset>> {
     options.partitioning =
         ds::DirectoryPartitioning::MakeFactory({"year", "month"});
     let factory =
-        ds::FileSystemDatasetFactory::Make(filesystem, selector,
+        ds::FileSystemDatasetFactory::Make(s3, selector,
                                         format, options).unwrap();
     let finopts = ds::FinishOptions;
     finopts.validate_fragments = true;
@@ -31,26 +38,25 @@ fn create_dataset() -> Result<std::shared_ptr<ds::Dataset>> {
     factory.finish(finopts);
 }
 
-fn write_dataset(dataset: std::shared_ptr<ds::Dataset>) -> arrow::Status {
-    let scan_builder = dataset.NewScan().unwrap();
-    scan_builder.UseThreads(true);
-    scan_builder.BatchSize(1 << 28);
-    scan_builder.Filter(cp::and_({
-        cp::greater_equal(cp::field_ref("year"), cp::literal(2014)),
-        cp::less_equal(cp::field_ref("year"), cp::literal(2015)),
-    }));
-    let scanner = scan_builder.Finish().unwrap();
+fn write_dataset(dataset: impl TableProvider) -> Result<()> {
+    let ctx = SessionContext::new();
+    let scanner = dataset.scan(
+        &ctx.state(),
+        None,
+        and(col("year").gt_eq(lit(2014)),
+            col("year").lt_eq(lit(2015))),
+        Some(1 << 28)
+    );
+    // scan_builder.UseThreads(true);
     println!("{}", dataset.schema());
 
-    let filesystem: std::shared_ptr<fs::FileSystem> =
-        std::make_shared<fs::LocalFileSystem>();
+    let filesystem = LocalFileSystem::new();
 
     let base_path = "/home/zero/sample/csv_dataset";
-    let format = std::make_shared<ds::CsvFileFormat>();
+    let format = CsvFormat::default().with_delimiter('|');
     let write_opts = ds::FileSystemDatasetWriteOptions;
     let csv_write_options = std::static_pointer_cast<ds::CsvFileWriteOptions>(
         format.DefaultWriteOptions());
-    csv_write_options.write_options.delimiter = '|';
     write_opts.file_write_options = csv_write_options;
     write_opts.filesystem = filesystem;
     write_opts.base_dir = base_path;
