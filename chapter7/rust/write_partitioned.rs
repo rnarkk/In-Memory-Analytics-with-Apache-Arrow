@@ -2,13 +2,12 @@ use std::fs::File;
 use arrow::{
     compute as cp,
     data,
-    datatypes::{DataType, Field, Schema}
+    datatypes::{DataType, Field, Schema},
+    error::Result
 };
+use datafusion::prelude::*;
 
-namespace fs = arrow::fs;
-namespace ds = arrow::dataset;
-
-fn create_dataset() -> arrow::Result<std::shared_ptr<ds::Dataset>> {
+fn create_dataset() -> Result<std::shared_ptr<ds::Dataset>> {
     let opts = fs::S3Options::Anonymous();
     opts.region = "us-east-2";
 
