@@ -6,11 +6,7 @@ use arrow::{
 
 fn read_csv(filename: &str) -> arrow::Result<std::shared_ptr<arrow::Table>> {
     let file = File::open(filename).unwrap();
-    let read_options = arrow::csv::ReadOptions::Defaults();
-    let parse_options = arrow::csv::ParseOptions::Defaults();
-    let convert_options = arrow::csv::ConvertOptions::Defaults();
-
-    let reader = Reader::new(file, read_options, parse_options, convert_options).unwrap();
+    let reader = Reader::new(file).unwrap();
     reader.read()
 }
 
