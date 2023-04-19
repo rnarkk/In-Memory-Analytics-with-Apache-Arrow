@@ -1,6 +1,7 @@
 [package]
 name = "In-Memory-Analytics-with-Apache-Arrow"
 version = "0.0.0"
+edition = "2021"
 
 [[example]]
 name = "ch1"
