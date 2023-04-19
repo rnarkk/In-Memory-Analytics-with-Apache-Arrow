@@ -7,6 +7,7 @@ use arrow::{
 };
 use aws_config;
 use aws_sdk_s3;
+use datafusion::prelude::*;
 // use super::timer;
 
 // namespace fs = arrow::fs;
