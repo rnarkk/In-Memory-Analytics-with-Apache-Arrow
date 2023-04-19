@@ -3,8 +3,8 @@ use arrow::{
     self,
     csv::ReaderBuilder
 };
+use datafusion::prelude::*;
 use parquet as pq;
-// import pandas as pd
 
 // run this from the sample_data directory to generate the .parquet
 // .arrow and -nonan.arrow files
