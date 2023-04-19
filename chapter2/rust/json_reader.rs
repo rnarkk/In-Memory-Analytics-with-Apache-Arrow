@@ -1,9 +1,9 @@
 use std::fs::File;
-use arrow::json::RawReader;
+use arrow::json::RawReaderBuilder;
 
 fn main() {
     let file = File::open("sample.json").unwrap();
-    let reader = RawReader::new(file).unwrap();
-    let table = reader.read().unwrap();
-    println!("{}", table);
+    let reader = RawReaderBuild::new(file).unwrap();
+    let batch = reader.read().unwrap();
+    println!("{}", batch);
 }
