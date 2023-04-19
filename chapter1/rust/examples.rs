@@ -19,13 +19,13 @@ fn random_data_example() {
     let builder = arrow::DoubleBuilder {DataType::Float64, pool};
     let ncols = 16;
     let nrows = 8192;
-    let columns = arrow::ArrayVector (ncols);
+    let mut columns = Vec::with_capacity(ncols);
     let mut fields = Vec::new();
     for i in 0..ncols {
         for j in 0..nrows {
             builder.append(normal.sample(&mut rng));
         }
-        builder.Finish(&columns[i]).unwrap();
+        columns.push(builder.finish().unwrap());
         fields.push(Field::new(format!("c{i}"), DataType::Float64, false));
     }
 
