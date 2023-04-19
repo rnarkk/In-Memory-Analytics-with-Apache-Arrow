@@ -1,5 +1,5 @@
 use arrow::{
-    array::{Float64Builder, Int16Builder, Int64BufferBuilder, StringBuilder},
+    array::{Float64Builder, Int16Builder, Int64BufferBuilder, StringBuilder, StructArray},
     buffer::Buffer,
     datatypes::{DataType, Field, Schema},
     record_batch::RecordBatch
