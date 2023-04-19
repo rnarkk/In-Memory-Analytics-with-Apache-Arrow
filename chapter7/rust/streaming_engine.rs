@@ -35,7 +35,7 @@ fn create_dataset() -> arrow::Result<std::shared_ptr<ds::Dataset>> {
 }
 
 fn calc_mean(dataset: std::shared_ptr<ds::Dataset>) -> Result<()> {
-    let ctx = cp::default_exec_context();
+    let ctx = SessionContext::new();
 
     let options = std::make_shared<ds::ScanOptions>();
     options.use_threads = true;
