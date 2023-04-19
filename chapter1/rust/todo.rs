@@ -14,19 +14,20 @@ fn building_struct_array() {
     str_builder.append_values(locations);
     children.push(str_builder.finish());
     let mut year_builder = Int16Builder::new();
-    year_bldr.AppendValues(years);
+    year_builder.append_values(years);
     children.push(year_builder.finish());
 
-  arrow::StructArray arr{
-      arrow::struct_({field("archer", utf8()), field("location", utf8()),
-                      field("year", int16())}),
-      children[0]->length(), children};
-  std::cout << arr.ToString() << std::endl;
+    let arr = StructArray:from(vec![
+        Field::new("archer", DataType:::Utf8),
+        Field::new("location", DataType::Utf8),
+        Field::new("year", DataType::Int16)
+    ]),
+      children[0].len(), children};
+    println!("{}", arr);
 }
 
 fn build_struct_builder() {
-  using arrow::field;
-  std::shared_ptr<arrow::DataType> st_type = arrow::struct_(
+    std::shared_ptr<arrow::DataType> st_type = arrow::struct_(
       {field("archer", arrow::utf8()), field("location", arrow::utf8()),
        field("year", arrow::int16())});
 
