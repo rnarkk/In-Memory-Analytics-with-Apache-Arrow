@@ -8,11 +8,9 @@ use parquet::file::{
 
 fn main() {
     let file = File::open("../../sample_data/train.parquet").unwrap();
-    let reader = ParquetRecordBatchReaderBuilder::new(file).unwrap();
-
-    let table = std::shared_ptr<arrow::Table>;
-    reader.ReadTable(&table).unwrap();
-    println!("{}", table);
+    let reader = ParquetRecordBatchReaderBuilder::try_new(file).unwrap().build().unwrap();
+    let batch = reader.next().unwrap();
+    println!("{}", batch);
 
     let outfile = File::create("train.parquet").unwrap();
     let writer = SerializedFileWriter::new(outfile).unwrap();
