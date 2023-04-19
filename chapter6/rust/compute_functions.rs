@@ -1,6 +1,6 @@
 use std::fs::File;
 use arrow::{
-    compute::{self as cp, SortOptions},
+    compute::*,
     error::Result
 };
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
@@ -12,9 +12,8 @@ fn compute_parquet() -> Result<()> {
     let batch = reader.next().unwrap().unwrap();
     let column = batch.column_by_name("total_amount").unwrap();
     println!("{:?}", column);
-
-    let incremented = cp::add_scalar(column, 5.5)?;
-    println!("{}", incremented);
+    let added = add_scalar(column, 5.5)?;
+    println!("{}", added);
     Ok(())
 }
 
@@ -38,16 +37,11 @@ fn sort_table() -> Result<()> {
     let input = File::open(filepath).unwrap();
     let reader = ParquetRecordBatchReaderBuilder::try_new(input)?.build()?;
     let batch = reader.next().unwrap().unwrap();
-
-    let sort_opts = SortOptions { descending: true, nulls_first: };
-    sort_opts.sort_keys = {arrow::compute::SortKey{
-        "total_amount", arrow::compute::SortOrder::Descending}};
-    let indices = arrow::compute::CallFunction("sort_indices", {batch}, &sort_opts).unwrap();
-
-    let sorted = cp::take(batch, indices).unwrap();
-    let output = std::move(sorted).table();
+    let column = batch.column_by_name("total_amount").unwrap();
+    let sort_opts = SortOptions { descending: true, nulls_first: true };
+    let indices = sort_to_indices(column, &sort_opts, None)?;
+    let output = take(batch, &indices, None)?;
     println!("{}", output);
-
     Ok(())
 }
 
