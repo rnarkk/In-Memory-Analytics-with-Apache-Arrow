@@ -22,9 +22,9 @@ use aws_config::;
 use aws_sdk_s3::Client as S3Client;
 
 struct Server {
-	// flight.BaseFlightServer,
-	s3_client: S3Client,
-	bucket: String
+    // flight.BaseFlightServer,
+    s3_client: S3Client,
+    bucket: String
 }
 
 impl Server {
@@ -104,14 +104,14 @@ impl Server {
     }
 }
 
-
+#[tokio::main]
 fn main() {
-	let srv = flight.NewServerWithMiddleware(nil);
-	srv.Init("0.0.0.0:0");
-	srv.RegisterFlightService(NewServer());
-	// the Serve function doesn’t return until the server
-	// shuts down. For now we’ll start it running in a goroutine
-	// and shut the server down when our main ends.
+    let srv = flight.NewServerWithMiddleware(nil);
+    srv.Init("0.0.0.0:0");
+    srv.RegisterFlightService(NewServer());
+    // the Serve function doesn’t return until the server
+    // shuts down. For now we’ll start it running in a goroutine
+    // and shut the server down when our main ends.
 	go srv.Serve()
 	defer srv.Shutdown()
 
