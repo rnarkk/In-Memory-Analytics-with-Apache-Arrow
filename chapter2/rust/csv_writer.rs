@@ -6,23 +6,23 @@ use arrow::{
     record_batch::RecordBatch
 };
 
-fn read_csv(filename: &str) -> Result<RecordBatch> {
-    let file = File::open(filename).unwrap();
+fn read_csv(path: &str) -> Result<RecordBatch> {
+    let file = File::open(path).unwrap();
     let reader = ReaderBuilder::new().build(file).unwrap();
     reader.read()
 }
 
-fn write_table(batch: &RecordBatch, filename: &str) -> Result<()> {
+fn write_table(batch: &RecordBatch, path: &str) -> Result<()> {
     let append = false;  // set to true to append to an existing file
-    let file = OpenOptions::new().append(append).open(filename).unwrap();
+    let file = OpenOptions::new().append(append).open(path).unwrap();
     let writer = WriterBuilder::new().build(file);
     writer.write(batch)
 }
 
-fn incremental_write(table: &RecordBatch, filename: &str) -> Result<()> {
+fn incremental_write(table: &RecordBatch, path: &str) -> Result<()> {
     let append = false;  // set to true to append to an existing file
-    let output = OpenOptions::new().append(append).open(output_filename, append).unwrap();
-    let table_reader = arrow::TableBatchReader(*table);
+    let output = OpenOptions::new().append(append).open(path).unwrap();
+    let reader = arrow::TableBatchReader(*table);
 
     let maybe_writer = arrow::csv::MakeCSVWriter(
         output, table_reader.schema(), arrow::csv::WriteOptions::Defaults());
@@ -32,7 +32,7 @@ fn incremental_write(table: &RecordBatch, filename: &str) -> Result<()> {
 
     let writer: std::shared_ptr<arrow::ipc::RecordBatchWriter> = *maybe_writer;
     let batch = std::shared_ptr<arrow::RecordBatch>;
-    while let Some(todo) = table_reader.next(&batch)  {
+    while let Some(todo) = reader.next(&batch)  {
         if !batch {
             return;
         }
