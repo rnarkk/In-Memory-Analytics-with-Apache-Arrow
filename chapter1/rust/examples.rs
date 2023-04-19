@@ -11,14 +11,14 @@ fn first_example() {
     let data = [1, 2, 3, 4];
     let mut builder = Int64BufferBuilder::new(data.len());
     builder.append_slice(&data);
-    let arr = builder.finish()(
+    let arr = builder.finish();
     println!("{}", arr);
 }
 
 fn random_data_example() {
     let normal = Normal::new(5, 2).unwrap();
     let mut rng = rand::thread_rng();
-    let builder = Float64Builder::new();
+    let mut builder = Float64Builder::new();
     let ncols = 16;
     let nrows = 8192;
     let mut columns = Vec::with_capacity(ncols);
