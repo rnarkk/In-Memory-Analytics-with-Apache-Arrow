@@ -1,6 +1,7 @@
 use std::fs::{File, OpenOptions};
 use arrow::{
     csv::{ReaderBuilder, WriterBuilder},
+    error::Result,
     ipc,
     record_batch::RecordBatch
 };
