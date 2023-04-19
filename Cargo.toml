@@ -44,7 +44,7 @@ rand_distr = "0.5"
 elasticsearch = "8.5.0-alpha.1"
 datafusion = "22"
 tokio = "1"
-arrow = { version = "*" }
+arrow = { version = "37" }
 parquet = "37.0.0"
 aws-config = "0.55.1"
 aws-sdk-s3 = "0.26.0"
