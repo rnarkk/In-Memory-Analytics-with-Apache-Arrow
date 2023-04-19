@@ -4,11 +4,9 @@ fn building_struct_array() {
   using arrow::utf8;
   arrow::ArrayVector children;
 
-  std::vector<std::string> archers{"Legolas", "Oliver", "Merida", "Lara",
-                                   "Artemis"};
-  std::vector<std::string> locations{"Murkwood", "Star City", "Scotland",
-                                     "London", "Greece"};
-  std::vector<int16_t> years{1954, 1941, 2012, 1996, -600};
+    let archers = vec!["Legolas", "Oliver", "Merida", "Lara", "Artemis"];
+    let locations = vec!["Murkwood", "Star City", "Scotland", "London", "Greece"];
+    let years = vec![1954, 1941, 2012, 1996, -600];
 
   children.resize(3);
   arrow::StringBuilder str_bldr;
