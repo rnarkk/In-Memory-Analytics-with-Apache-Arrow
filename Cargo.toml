@@ -39,6 +39,7 @@ name = "ch8"
 path = "chapter8/rust/main.rs"
 
 [dependencies]
+datafusion = "22"
 tokio = "1"
 arrow = { version = "*" }
 parquet = "37.0.0"
