@@ -1,15 +1,15 @@
 use std::fs::File;
 use arrow::{
     compute as cp,
-    data,
     datatypes::{DataType, Field, Schema},
     error::Result
 };
 use datafusion::prelude::*;
+use aws_config::SdkConfig;
 
 fn create_dataset() -> Result<std::shared_ptr<ds::Dataset>> {
+    let config = SdkConfig::builder().region("us-east-2");
     let opts = fs::S3Options::Anonymous();
-    opts.region = "us-east-2";
 
     let format: std::shared_ptr<ds::FileFormat> =
         std::make_shared<ds::ParquetFileFormat>();
@@ -28,7 +28,7 @@ fn create_dataset() -> Result<std::shared_ptr<ds::Dataset>> {
     let finopts = ds::FinishOptions;
     finopts.validate_fragments = true;
     finopts.inspect_options.fragments = ds::InspectOptions::kInspectAllFragments;
-    factory.Finish(finopts);
+    factory.finish(finopts);
 }
 
 fn write_dataset(dataset: std::shared_ptr<ds::Dataset>) -> arrow::Status {

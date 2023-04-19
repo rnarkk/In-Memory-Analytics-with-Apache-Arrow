@@ -18,7 +18,7 @@ use arrow::{
     ipc
 };
 use parquet;
-use aws_config::;
+use aws_config::SdkConfig;
 use aws_sdk_s3::Client as S3Client;
 
 struct Server {
@@ -30,7 +30,7 @@ struct Server {
 impl Server {
     pub fn new() -> Self {
         Self {
-            s3_client: S3Client::new(s3::Options { region: "us-east-2" }),
+            s3_client: S3Client::new(&SdkConfig::builder().region("us-east-2").build()),
             bucket: "ursa-labs-taxi-data".to_owned(),
         }
     }
@@ -51,7 +51,7 @@ impl Server {
             if !key.ends_with(".parquet") {
                 continue
             }
-            let info = self.get_flight_info(fs.Context(), key, content.size()).unwrap();
+            let info = self.get_flight_info(key, content.size()).unwrap();
             fs.Send(info).unwrap();
         }
     

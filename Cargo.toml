@@ -36,6 +36,14 @@ name = "ch6_compute_or_not"
 path = "chapter6/rust/compute_or_not.rs"
 
 [[example]]
+name = "ch7_datasets_api"
+path = "chapter7/rust/datasets_api.rs"
+
+[[example]]
+name = "ch7_s3_datasets"
+path = "chapter7/rust/s3_datasets.rs"
+
+[[example]]
 name = "ch7_streaming_engine"
 path = "chapter7/rust/streaming_engine.rs"
 
