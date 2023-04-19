@@ -10,9 +10,6 @@ use aws_sdk_s3;
 use datafusion::prelude::*;
 // use super::timer;
 
-// namespace fs = arrow::fs;
-// namespace ds = arrow::dataset;
-
 fn create_dataset() -> arrow::Result<std::shared_ptr<ds::Dataset>> {
     let opts = fs::S3Options::Anonymous();
     opts.region = "us-east-2";

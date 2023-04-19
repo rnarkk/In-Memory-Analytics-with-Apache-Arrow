@@ -1,8 +1,7 @@
 use std::fs::{File, OpenOptions};
 use arrow::{
-    csv::{ReaderBuilder, Writer},
+    csv::{ReaderBuilder, Writer, WriterBuilder},
     error::Result,
-    ipc::{reader::StreamReader, writer::StreamWriter},
     record_batch::RecordBatch
 };
 
@@ -22,7 +21,7 @@ fn write_table(batch: &RecordBatch, path: &str) -> Result<()> {
 fn incremental_write(batch: &RecordBatch, path: &str) -> Result<()> {
     let append = false;  // set to true to append to an existing file
     let output = OpenOptions::new().append(append).open(path).unwrap();
-    let reader = StreamReader::try_new(batch).unwrap();
+    let reader = StreamReader::try_new(batch, None).unwrap();
     let writer = Writer::new(output);
 
     while let Some(batch) = reader.next() {
