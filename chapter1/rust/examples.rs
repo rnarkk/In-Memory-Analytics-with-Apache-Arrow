@@ -1,5 +1,5 @@
 use arrow::{
-    array::{Float64Builder, Int64Array},
+    array::{Float64Builder, Int64BufferBuilder},
     buffer::Buffer,
     datatypes::{DataType, Field, Schema},
     record_batch::RecordBatch
@@ -8,8 +8,10 @@ use rand;
 use rand_distr::Normal;
 
 fn first_example() {
-    let data: Vec<i64> = vec![1, 2, 3, 4];
-    let arr = std::make_shared<Int64Array>(data.len(), Buffer::Wrap(data));
+    let data = [1, 2, 3, 4];
+    let mut builder = Int64BufferBuilder::new(data.len());
+    builder.append_slice(&data);
+    let arr = builder.finish()(
     println!("{}", arr);
 }
 
