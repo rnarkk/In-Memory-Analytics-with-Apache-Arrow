@@ -19,8 +19,7 @@ fn write_table(batch: &RecordBatch, filename: &str) -> Result<()> {
     writer.write(batch)
 }
 
-fn incremental_write(table: std::shared_ptr<arrow::Table>,
-                     output_filename: &str) -> arrow::Status {
+fn incremental_write(table: &RecordBatch, filename: &str) -> Result<()> {
     let append = false;  // set to true to append to an existing file
     let output = OpenOptions::new().append(append).open(output_filename, append).unwrap();
     let table_reader = arrow::TableBatchReader(*table);
