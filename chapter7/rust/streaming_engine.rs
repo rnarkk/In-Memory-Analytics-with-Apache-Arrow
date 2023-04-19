@@ -2,7 +2,7 @@ use std::fs::File;
 use arrow::{
     compute as cp,
     data,
-    datatypes::{DataType, Field, Schema}
+    datatypes::{DataType, Field, Schema},
     error::Result
 };
 use aws_config;
