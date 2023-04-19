@@ -4,6 +4,8 @@ use arrow::{
     datatypes::{DataType, Field, Schema},
     record_batch::RecordBatch
 };
+use rand;
+use rand_distr::Normal;
 
 fn first_example() {
     let data = Vec<i64>![1, 2, 3, 4];
