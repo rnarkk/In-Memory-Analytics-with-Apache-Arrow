@@ -39,6 +39,7 @@ name = "ch8"
 path = "chapter8/rust/main.rs"
 
 [dependencies]
+elasticsearch = "8"
 datafusion = "22"
 tokio = "1"
 arrow = { version = "*" }
