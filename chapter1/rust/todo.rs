@@ -2,7 +2,7 @@ fn building_struct_array() {
   using arrow::field;
   using arrow::int16;
   using arrow::utf8;
-    let children = Vec::with_capacity(3);
+    let mut children = Vec::with_capacity(3);
 
     let archers = vec!["Legolas", "Oliver", "Merida", "Lara", "Artemis"];
     let locations = vec!["Murkwood", "Star City", "Scotland", "London", "Greece"];
@@ -10,12 +10,12 @@ fn building_struct_array() {
 
     let mut str_builder = StringBuilder::new();
     str_builder.append_values(archers);
-    str_bldr.Finish(&children[0]);
-  str_bldr.AppendValues(locations);
-  str_bldr.Finish(&children[1]);
-  arrow::Int16Builder year_bldr;
-  year_bldr.AppendValues(years);
-  year_bldr.Finish(&children[2]);
+    children.push(str_builder.finish());
+    str_builder.append_values(locations);
+    children.push(str_builder.finish());
+    let mut year_builder = Int16Builder::new();
+    year_bldr.AppendValues(years);
+    children.push(year_builder.finish());
 
   arrow::StructArray arr{
       arrow::struct_({field("archer", utf8()), field("location", utf8()),
