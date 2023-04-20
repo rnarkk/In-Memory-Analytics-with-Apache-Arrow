@@ -4,13 +4,14 @@ use std::{
 };
 use arrow::{
 	array,
-	datatypes::{DataType, Field, Schema}
+	datatypes::{DataType, Field, Schema},
+	json::writer
 };
 use parquet::{
 	arrow::arrow_reader::ParquetRecordBatchReaderBuilder,
 	file
 };
-use elasticsearch::Elasticsearch;
+use elasticsearch::{BulkOperation, Elasticsearch};
 
 struct Property {
     ty: String,
@@ -82,31 +83,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let file = File::open("../../sample_data/sliced.parquet").unwrap();
 	let reader = ParquetRecordBatchReaderBuilder::try_new(file).unwrap()
 		.with_batch_size(50000).build().unwrap();
-
-    let ctx, cancel = context.WithCancel(context.Background());
-    // defer cancel()
     
     // leave these empty since we're not filtering out any
     // columns or row groups. But if you wanted to do so,
     // this is how you'd optimize the read
     let cols: Vec<i32>;
 	let rowgroups: Vec<i32>;
-    let rr = reader.GetRecordReader(ctx, cols, rowgroups).unwrap();
+    let rr = reader.GetRecordReader(cols, rowgroups).unwrap();
 
-    let es = elasticsearch.NewDefaultClient().unwrap();
 	let client = Elasticsearch::default();
-
-    let mut mapping = struct {
-        mappings struct {
-            properties HashMap<String, Property>
-        }
-    }
-    mapping.mappings.properties = create_mapping(rr.schema());
     let response = client.indices().create("indexname").body(json!({
 		"mappings": {
-			"properties": {
-				"field1": { "type" : "text" }
-			}
+			"properties": create_mapping(reader.schema())
 		}
 	})).send().await?;
     if !response.status_code().is_success() {
@@ -115,17 +103,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     // Index created!
 
-    let indexer = esutil.NewBulkIndexer(esutil.BulkIndexerConfig{
-        Client: client, Index: "indexname",
-        OnError: func(_ context.Context, err error) {
-            fmt.Println(err)
-        },
-    }).unwrap();
+    let indexer = BulkIndexOperation::new()
+		.index("indexname")
+		// OnError: |_: context.Context, err: error| println!(err),
+		.unwrap();
 
     let pr, pw = io.Pipe();  // to pass the data
     go func() {
-        for rr.next() {
-            if err = array.RecordToJSON(rr.record(), pw); err != nil {
+        while let Some(batch) = reader.next() {
+            if err = array.RecordToJSON(batch, pw); err != nil {
                 cancel()
                 pw.CloseWithError(err)
                 return
@@ -134,17 +120,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         pw.Close()
     }()
 
-    scanner = bufio.NewScanner(pr)
-    for scanner.Scan() {
-        indexer.Add(ctx, esutil.BulkIndexerItem{
-            Action: "index",
-            Body:   strings.NewReader(scanner.Text()),
-            OnFailure: func(_ context.Context,
-                item esutil.BulkIndexerItem,
-                resp esutil.BulkIndexerResponseItem,
-                err error) {
-                fmt.Printf("Failure! %s, %+v\n%+v\n", err, item, resp)
-            },
+    let scanner = bufio.NewScanner(pr);
+    while scanner.scan() {
+        indexer.Add(ctx, esutil.BulkIndexerItem {
+            action: "index",
+            body: strings.NewReader(scanner.text()),
+            on_failure: |_: context.Context,
+                item: esutil.BulkIndexerItem,
+                resp: esutil.BulkIndexerResponseItem,
+                err: error| print!("Failure! {}, {}\n{}\n", err, item, resp),
         }).unwrap();
     }
 
