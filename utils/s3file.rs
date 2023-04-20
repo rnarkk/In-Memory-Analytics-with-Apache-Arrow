@@ -11,7 +11,6 @@ import (
 */
 
 struct S3File {
-    context: context.Context,
     client: s3::Client,
     bucket: String,
     key: String,
@@ -22,10 +21,10 @@ struct S3File {
 const UnknownSize: i64 = -1;
 
 impl S3File {
-    pub fn new(ctx: context.Context, client: *s3.Client, bucket: String,
-			   key: String, length: i64) -> Result<S3File> {
+    pub fn new(client: s3::Client, bucket: String, key: String, length: i64)
+		-> Result<S3File>
+	{
 		let slf = Self {
-			context: ctx,
 			client,
 			bucket,
 			key,
@@ -48,41 +47,41 @@ impl S3File {
 	}
 
 	pub fn seek(offset: i64, whence: i32) -> Result<i64> {
-		let new_pos, offs = i64(0), offset;
+		let position = 0 as i64;
 		match whence {
 			io.SeekStart => {
-				new_pos = offset
+				position = offset;
 			}
 			io.SeekCurrent => {
-				new_pos = self.position + offset
+				position = self.position + offset;
 			}
 			io.SeekEnd => {
-				new_pos = i64(self.length) + offset
+				position = i64(self.length) + offset;
 			}
 		}
 
-		if new_pos < 0 {
-			return Err("negative result position")
+		if position < 0 {
+			return Err("negative result position");
 		}
-		if new_pos > i64(self.length) {
-			return Err("new position exceeds size of file")
+		if position > (self.length as i64) {
+			return Err("new position exceeds size of file");
 		}
-		self.position = new_pos;
-		Ok(new_pos)
+		self.position = position;
+		Ok(position)
 	}
 
 	pub fn read_at(&self, p: Vec<u8>, off: i64) -> Result<i32> {
-		let end = off + (p.len() as i64) - 1;
+		let mut end = off + (p.len() as i64) - 1;
 		if end >= self.length {
-			end = self.length - 1
+			end = self.length - 1;
 		}
 
-		let out = self.client.GetObject(self.Context, &s3::GetObjectInput {
+		let out = self.client.GetObject(&s3::GetObjectInput {
 			bucket: &self.bucket,
 			key: &self.key,
 			range: format!("bytes={}-{}", off, end)
 		})?;
 
-		io.ReadAtLeast(out.Body, p, i32(out.ContentLength))
+		io.ReadAtLeast(out.Body, p, (out.ContentLength as i32))
 	}
 }

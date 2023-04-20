@@ -12,17 +12,20 @@ import (
 use arrow::{
     flight::{
         Criteria, FlightInfo, Ticket, FlightDescriptor, FlightEndpoint,
+        Location,
+        flight_descriptor::DescriptorType,
         flight_service_server::FlightServiceServer
     },
     ipc
 };
 use parquet::{
     arrow,
-    file
+    file::reader::SerializedFileReader
 };
 use aws_config::SdkConfig;
 use aws_sdk_s3::Client as S3Client;
 use object_store::aws;
+use utils::S3File;
 
 struct Server {
     // flight.BaseFlightServer,
@@ -61,36 +64,26 @@ impl Server {
         Ok(())
     }
 
-    fn get_flight_info(&self, key: &str, size: i64)
-        -> Result<FlightInfo>
+    fn get_flight_info(&self, path: &str, size: i64) -> Result<FlightInfo>
     {
-        let s3file = utils.NewS3File(ctx, self.s3_client,
-            self.bucket, key, size).unwrap();
-    
-        let pr = file.NewParquetReader(s3file).unwrap();
-        // defer pr.Close()
-    
-        let sc = pqarrow.FromParquet(pr.MetaData().Schema, nil, nil).unwrap();
+        let s3file = S3File::new(self.s3_client, self.bucket, path, size).unwrap();
+        let reader = SerializedFileReader::new(s3file).unwrap();
+        let sc = pqarrow.FromParquet(reader.metadata().Schema, nil, nil).unwrap();
     
         Ok(FlightInfo {
             schema: flight.SerializeSchema(sc, memory.DefaultAllocator),
-            flight_descriptor: &FlightDescriptor {
-                r#type: flight.DescriptorPATH,
-                path: vec![key],
-            },
-            endpoint: vec![FlightEndpoint {{
-                ticket: Some(Ticket { ticket: []byte(key) }),
+            flight_descriptor: Some(FlightDescriptor::new_path(vec![path])),
+            endpoint: vec![FlightEndpoint {
+                ticket: Some(Ticket { ticket: path.into() }),
                 location: Vec::new()
-            }}],
-            total_records: pr.NumRows(),
+            }],
+            total_records: reader.num_row_groups() as i64,
             total_bytes: -1,
         })
     }
 
-    pub fn do_get(&self, tkt: Ticket, fs: flight.FlightService_DoGetServer) error {
-        let path = string(tkt.ticket)
-        let sf = utils.NewS3File(fs.Context(), self.s3_client,
-            self.bucket, path, utils.UnknownSize).unwrap();
+    pub fn do_get(&self, ticket: Ticket, fs: flight.FlightService_DoGetServer) error {
+        let sf = S3File::new(self.s3_client, self.bucket, ticket.to_string(), -1).unwrap();
         let pr = file.NewParquetReader(sf).unwrap();
         defer pr.Close()
         let arrowRdr = pqarrow.NewFileReader(pr,
@@ -110,19 +103,19 @@ impl Server {
 #[tokio::main]
 fn main() {
     let srv = flight.NewServerWithMiddleware(nil);
+    // let location = Location { }
     srv.Init("0.0.0.0:0");
     srv.RegisterFlightService(NewServer());
     // the Serve function doesn’t return until the server
     // shuts down. For now we’ll start it running in a goroutine
     // and shut the server down when our main ends.
-    go srv.Serve()
-    defer srv.Shutdown()
+    go srv.Serve();
 
     let client = flight.NewClientWithMiddleware(srv.Addr().String(), nil, nil, grpc.WithTransportCredentials(insecure.NewCredentials())).unwrap();
     // defer client.Close()
 
     let info_stream = client.list_flights(
-        &Criteria { expression: []byte("2009")}).await.unwrap();
+        &Criteria { expression: "2009".into()}).await.unwrap();
 
     loop {
         let info: FlightInfo = info_stream.into_inner();
