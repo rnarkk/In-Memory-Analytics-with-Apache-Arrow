@@ -1,12 +1,11 @@
 /*
 import (
-	"github.com/PacktPublishing/In-Memory-Analytics-with-Apache-Arrow-/utils"
-	"github.com/apache/arrow/go/v8/arrow/arrio"
-	"github.com/apache/arrow/go/v8/arrow/memory"
-	"github.com/apache/arrow/go/v8/parquet/file"
-	"github.com/apache/arrow/go/v8/parquet/pqarrow"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+    "github.com/PacktPublishing/In-Memory-Analytics-with-Apache-Arrow-/utils"
+    "github.com/apache/arrow/go/v8/arrow/arrio"
+    "github.com/apache/arrow/go/v8/arrow/memory"
+    "github.com/apache/arrow/go/v8/parquet/pqarrow"
+    "google.golang.org/grpc"
+    "google.golang.org/grpc/credentials/insecure"
 )
 */
 
@@ -17,7 +16,10 @@ use arrow::{
     },
     ipc
 };
-use parquet;
+use parquet::{
+    arrow,
+    file
+};
 use aws_config::SdkConfig;
 use aws_sdk_s3::Client as S3Client;
 use object_store::aws;
@@ -113,24 +115,24 @@ fn main() {
     // the Serve function doesn’t return until the server
     // shuts down. For now we’ll start it running in a goroutine
     // and shut the server down when our main ends.
-	go srv.Serve()
-	defer srv.Shutdown()
+    go srv.Serve()
+    defer srv.Shutdown()
 
-	let client = flight.NewClientWithMiddleware(srv.Addr().String(), nil, nil, grpc.WithTransportCredentials(insecure.NewCredentials())).unwrap();
-	// defer client.Close()
+    let client = flight.NewClientWithMiddleware(srv.Addr().String(), nil, nil, grpc.WithTransportCredentials(insecure.NewCredentials())).unwrap();
+    // defer client.Close()
 
-	let info_stream = client.list_flights(
-		&Criteria { expression: []byte("2009")}).await.unwrap();
+    let info_stream = client.list_flights(
+        &Criteria { expression: []byte("2009")}).await.unwrap();
 
-	loop {
-		let info: FlightInfo = info_stream.into_inner();
-		if err != nil {
-			if err == io.EOF { // we hit the end of the stream
-				break
-			}
-			panic(err) // we got an error!
-		}
-		println!(info.flight_descriptor.unwrap().path);
-	}
+    loop {
+        let info: FlightInfo = info_stream.into_inner();
+        if err != nil {
+            if err == io.EOF { // we hit the end of the stream
+                break
+            }
+            panic(err) // we got an error!
+        }
+        println!(info.flight_descriptor.unwrap().path);
+    }
 
 }

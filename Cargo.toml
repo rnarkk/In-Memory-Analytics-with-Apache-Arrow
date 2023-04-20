@@ -24,6 +24,10 @@ name = "ch2_parquet_reader_writer"
 path = "chapter2/rust/parquet_reader_writer.rs"
 
 [[example]]
+name = "ch3_elastic"
+path = "chapter3/rust/elastic.rs"
+
+[[example]]
 name = "ch4_generate_file"
 path = "chapter4/rust/generate_file.rs"
 

@@ -1,136 +1,152 @@
-use arrow::datatypes::{DataType, Schema};
-use parquet;
+use std::{
+	collections::HashMap,
+	fs::File
+};
+use arrow::{
+	array,
+	datatypes::{DataType, Field, Schema}
+};
+use parquet::{
+	arrow::arrow_reader::ParquetRecordBatchReaderBuilder,
+	file
+};
+use elasticsearch::Elasticsearch;
 
 struct Property {
     ty: String,
-	// #[omitempty]
+    // #[omitempty]
     format: String,
-	// #[omitempty]
+    // #[omitempty]
     fields: interface{}
 }
 
 var keywordField = &struct {
-	keyword interface{}
+    keyword interface{}
 }{struct {
-	ty: string,
-	ignore_above: i32
+    ty: string,
+    ignore_above: i32
 }{"keyword", 256}}
 
-var primitiveMapping = HashMap<arrow::Type, String> {
-	arrow.BOOL:       "boolean",
-	arrow.INT8:       "byte",
-	arrow.UINT8:      "short", // no unsigned byte type
-	arrow.INT16:      "short",
-	arrow.UINT16:     "integer", // no unsigned short
-	arrow.INT32:      "integer",
-	arrow.UINT32:     "long", // no unsigned integer
-	arrow.INT64:      "long",
-	arrow.UINT64:     "unsigned_long",
-	arrow.FLOAT16:    "half_float",
-	arrow.FLOAT32:    "float",
-	arrow.FLOAT64:    "double",
-	arrow.DECIMAL:    "scaled_float",
-	arrow.DECIMAL256: "scaled_float",
-	arrow.BINARY:     "binary",
-	arrow.STRING:     "text",
+static primitiveMapping: HashMap<DataType, String> = HashMap::from(vec![
+    (DataType::Bool, "boolean"),
+    (DataType::Int8, "byte"),
+    (DataType::Uint8, "short"),  // no unsigned byte type
+    (DataType::Int16, "short"),
+    (DataType::Uint16, "integer"), // no unsigned short
+    (DataType::Int32, "integer"),
+    (DataType::Uint32, "long"), // no unsigned integer
+    (DataType::Int64, "long"),
+    (DataType::Uint64, "unsigned_long"),
+    (DataType::Float16, "half_float"),
+    (DataType::Float32, "float"),
+    (DataType::Float64, "double"),
+    (DataType::Decimal, "scaled_float"),
+    (DataType::Decimal256, "scaled_float"),
+    (DataType::Binary, "binary"),
+    (DataType::String, "text"),
+]);
+
+fn create_mapping(schema: Schema) -> HashMap<String, Property> {
+    let mut mappings = HashMap::new();
+    for field in schema.fields() {
+        let p: property;
+        if primitive_mapping.get(field.data_type()).is_none() {
+            match field.data_type() {
+                DataType::Date32 | DataType::Date64 => {
+                    p.Type = "date";
+                    p.Format = "yyyy-MM-dd";
+				}
+                DataType::Time32 | DataType::Time64  => {
+                    p.Type = "date";
+                    p.Format = "time||time_no_millis";
+				}
+                DataType::Timestamp => {
+                    p.Type = "date";
+                    p.Format = "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSSSSSSSS";
+				}
+                DataType::String => {
+                    p.Type = "text";  // or keyword
+                    p.Fields = keywordField;
+				}
+            }
+        }
+        mappings.insert(field.name(), p);
+    }
+    mappings
 }
 
-fn create_mapping(sc: Schema) -> HashMap<String, Property> {
-	let mut mappings = HashMap::new();
-	for (_, f) in range sc.fields() {
-		var (
-			p  property
-			ok bool
-		)
-		if p.Type, ok = primitiveMapping[f.Type.ID()]; !ok {
-			match f.Type.ID() {
-				arrow.DATE32 | arrow.DATE64 =>
-					p.Type = "date"
-					p.Format = "yyyy-MM-dd",
-				arrow.TIME32 | arrow.TIME64  =>
-					p.Type = "date"
-					p.Format = "time||time_no_millis",
-				arrow.TIMESTAMP =>
-					p.Type = "date"
-					p.Format = "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSSSSSSSS",
-				arrow.STRING =>
-					p.Type = "text" // or keyword
-					p.Fields = keywordField
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // the second argument (false) is a bool value for memory mapping
+    // the file if desired.
+	let file = File::open("../../sample_data/sliced.parquet").unwrap();
+	let reader = ParquetRecordBatchReaderBuilder::try_new(file).unwrap()
+		.with_batch_size(50000).build().unwrap();
+
+    let ctx, cancel = context.WithCancel(context.Background());
+    // defer cancel()
+    
+    // leave these empty since we're not filtering out any
+    // columns or row groups. But if you wanted to do so,
+    // this is how you'd optimize the read
+    let cols: Vec<i32>;
+	let rowgroups: Vec<i32>;
+    let rr = reader.GetRecordReader(ctx, cols, rowgroups).unwrap();
+
+    let es = elasticsearch.NewDefaultClient().unwrap();
+	let client = Elasticsearch::default();
+
+    let mut mapping = struct {
+        mappings struct {
+            properties HashMap<String, Property>
+        }
+    }
+    mapping.mappings.properties = create_mapping(rr.schema());
+    let response = client.indices().create("indexname").body(json!({
+		"mappings": {
+			"properties": {
+				"field1": { "type" : "text" }
 			}
 		}
-		mappings[f.Name] = p
-	}
-	mappings
-}
+	})).send().await?;
+    if !response.status_code().is_success() {
+        // handle failure response and return/exit
+        panic!("non-ok status: {}", response.status_code());
+    }
+    // Index created!
 
-fn main() {
-	// the second argument is a bool value for memory mapping
-	// the file if desired.
-  	let parq = file.OpenParquetFile("../../sample_data/sliced.parquet", false).unwrap();
-	// defer parq.Close()
+    let indexer = esutil.NewBulkIndexer(esutil.BulkIndexerConfig{
+        Client: client, Index: "indexname",
+        OnError: func(_ context.Context, err error) {
+            fmt.Println(err)
+        },
+    }).unwrap();
 
-	let props = pqarrow.ArrowReadProperties { BatchSize: 50000 };
-	let rdr = pqarrow.NewFileReader(parq, props,
-		memory.DefaultAllocator).unwrap();
+    let pr, pw = io.Pipe();  // to pass the data
+    go func() {
+        for rr.next() {
+            if err = array.RecordToJSON(rr.record(), pw); err != nil {
+                cancel()
+                pw.CloseWithError(err)
+                return
+            }
+        }
+        pw.Close()
+    }()
 
-	let ctx, cancel = context.WithCancel(context.Background());
-	// defer cancel()
-	
-	// leave these empty since we're not filtering out any
-	// columns or row groups. But if you wanted to do so,
-	// this is how you'd optimize the read
-	var cols, rowgroups []int
-	let rr = rdr.GetRecordReader(ctx, cols, rowgroups).unwrap();
+    scanner = bufio.NewScanner(pr)
+    for scanner.Scan() {
+        indexer.Add(ctx, esutil.BulkIndexerItem{
+            Action: "index",
+            Body:   strings.NewReader(scanner.Text()),
+            OnFailure: func(_ context.Context,
+                item esutil.BulkIndexerItem,
+                resp esutil.BulkIndexerResponseItem,
+                err error) {
+                fmt.Printf("Failure! %s, %+v\n%+v\n", err, item, resp)
+            },
+        }).unwrap();
+    }
 
-	let es = elasticsearch.NewDefaultClient().unwrap();
-
-	let mut mapping = struct {
-		mappings struct {
-			properties HashMap<String, Property>
-		}
-	}
-	mapping.mappings.properties = create_mapping(rr.schema());
-	let response = es.Indices.Create("indexname",
-		es.Indices.Create.WithBody(
-			esutil.NewJSONReader(mapping))).unwrap();
-	if response.StatusCode != http.StatusOK {
-		// handle failure response and return/exit
-		panic(fmt.Errorf("non-ok status: %s", response.Status()))
-	}
-	// Index created!
-
-	let indexer = esutil.NewBulkIndexer(esutil.BulkIndexerConfig{
-		Client: es, Index: "indexname",
-		OnError: func(_ context.Context, err error) {
-			fmt.Println(err)
-		},
-	}).unwrap();
-
-	let pr, pw = io.Pipe() // to pass the data
-	go func() {
-		for rr.Next() {
-			if err = array.RecordToJSON(rr.record(), pw); err != nil {
-				cancel()
-				pw.CloseWithError(err)
-				return
-			}
-		}
-		pw.Close()
-	}()
-
-	scanner = bufio.NewScanner(pr)
-	for scanner.Scan() {
-		indexer.Add(ctx, esutil.BulkIndexerItem{
-			Action: "index",
-			Body:   strings.NewReader(scanner.Text()),
-			OnFailure: func(_ context.Context,
-				item esutil.BulkIndexerItem,
-				resp esutil.BulkIndexerResponseItem,
-				err error) {
-				fmt.Printf("Failure! %s, %+v\n%+v\n", err, item, resp)
-			},
-		}).unwrap();
-	}
-
-	indexer.close(ctx).unwrap();
+    indexer.close(ctx).unwrap();
 }
