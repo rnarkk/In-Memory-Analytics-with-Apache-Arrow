@@ -20,6 +20,7 @@ use arrow::{
 use parquet;
 use aws_config::SdkConfig;
 use aws_sdk_s3::Client as S3Client;
+use object_store::aws;
 
 struct Server {
     // flight.BaseFlightServer,
