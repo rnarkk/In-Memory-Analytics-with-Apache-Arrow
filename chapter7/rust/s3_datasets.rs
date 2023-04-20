@@ -37,7 +37,6 @@ fn timing_test() {
 
     let factory: TableProviderFactory;
     let dataset: TableProvider;
-
     {
         let t = timer;
         factory = ds::FileSystemDatasetFactory::Make(
@@ -46,9 +45,7 @@ fn timing_test() {
         dataset = factory.Finish().unwrap();
     }
 
-    let scan_builder = dataset.scan().unwrap();
-    let scanner = scan_builder.Finish().unwrap();
-
+    let scanner = dataset.scan().unwrap();
     {
         let t = timer;
         println!("{}", scanner.CountRows().unwrap());
