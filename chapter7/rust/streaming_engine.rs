@@ -8,7 +8,7 @@ use aws_config;
 use aws_sdk_s3;
 use datafusion::{
     datasource::{
-        datasource::TableProvider,
+        datasource::{TableProvider, TableProviderFactory},
         file_format::parquet::ParquetFormat
     },
     physical_plan::{
