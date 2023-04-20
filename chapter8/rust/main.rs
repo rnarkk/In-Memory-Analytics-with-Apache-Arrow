@@ -11,8 +11,8 @@ import (
 
 use arrow::{
     flight::{
-        Criteria, FlightInfo, Ticket, FlightDescriptor, FlightEndpoint,
-        Location,
+        Criteria, FlightClient, FlightDescriptor, FlightEndpoint, FlightInfo,
+        Location, Ticket,
         flight_descriptor::DescriptorType,
         flight_service_server::FlightServiceServer
     },
@@ -85,17 +85,13 @@ impl Server {
     pub fn do_get(&self, ticket: Ticket, fs: flight.FlightService_DoGetServer) error {
         let sf = S3File::new(self.s3_client, self.bucket, ticket.to_string(), -1).unwrap();
         let pr = file.NewParquetReader(sf).unwrap();
-        defer pr.Close()
         let arrowRdr = pqarrow.NewFileReader(pr,
             pqarrow.ArrowReadProperties { parallel: true, batch_size: 100000 },
             memory.DefaultAllocator).unwrap();
         let rr = arrowRdr.GetRecordReader(fs.Context(), nil, nil).unwrap();
-        // defer rr.Release()
-        let wr = flight.NewRecordWriter(fs, ipc.WithSchema(rr.Schema()));
-        // defer wr.Close()
-        let n, err = arrio.Copy(wr, rr);
+        let wr = flight.NewRecordWriter(fs, ipc.WithSchema(rr.schema()));
+        let n = arrio.Copy(wr, rr).unwrap();
         println!("wrote", n, "record batches");
-    
         err
     }
 }
@@ -105,14 +101,13 @@ fn main() {
     let srv = flight.NewServerWithMiddleware(nil);
     // let location = Location { }
     srv.Init("0.0.0.0:0");
-    srv.RegisterFlightService(NewServer());
+    srv.RegisterFlightService(Server::new());
     // the Serve function doesn’t return until the server
     // shuts down. For now we’ll start it running in a goroutine
     // and shut the server down when our main ends.
     go srv.Serve();
 
     let client = flight.NewClientWithMiddleware(srv.Addr().String(), nil, nil, grpc.WithTransportCredentials(insecure.NewCredentials())).unwrap();
-    // defer client.Close()
 
     let info_stream = client.list_flights(
         &Criteria { expression: "2009".into()}).await.unwrap();
